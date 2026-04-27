@@ -78,6 +78,7 @@ def procesar_ica_diario(
             continue
 
         ica_lista = [calcular_ica(x, bandas[clave_bandas]) if not pd.isna(x) else np.nan for x in valor_diario]
+        ica_lista = [np.nan if x == 0 else x for x in ica_lista] 
         df_dia[f"ICA_{contaminante}_{estacion}"] = ica_lista
 
     df_dia = df_dia.dropna(how="all")
