@@ -1,0 +1,13 @@
+# Entorno virtual (Local)
+venv/
+.venv/
+__pycache__/
+
+# Archivos de sistema y temporales
+.DS_Store
+descargas_*/
+*.pdf
+
+.vscode/
+build/
+
