@@ -8,6 +8,8 @@ from procesadores.lector    import preparar_datos_hoja
 from procesadores.ica       import procesar_ica
 from procesadores.nom       import procesar_aire
 from procesadores.diario    import procesar_diario
+from procesadores.diario_ica import procesar_ica_diario
+
 from almacenamiento.combinador  import combinar_con_existente
 from almacenamiento.zonas       import construir_hojas_zonas
 from almacenamiento.exportador  import (
@@ -53,7 +55,8 @@ if not ARCHIVO_ENTRADA:
     
 SALIDA_ICA      = "datos/datos_calidad_aire_ICA.xlsx"
 SALIDA_AIRE     = "datos/datos_calidad_aire_AIRE_Y_SALUD.xlsx"
-SALIDA_DIARIO   = "datos/datos_calidad_aire_DIARIO.xlsx"
+SALIDA_DIARIO   = "datos/datos_calidad_aire_DIARIO_IAS.xlsx"
+SALIDA_ICA_DIARIO = "datos/datos_calidad_aire_DIARIO_ICA.xlsx"
 
 # ── Lectura ──────────────────────────────────────────────────────────────────
 xls = pd.ExcelFile(ARCHIVO_ENTRADA)
@@ -61,6 +64,7 @@ xls = pd.ExcelFile(ARCHIVO_ENTRADA)
 df_ica_total    = pd.DataFrame()
 df_aire_total   = pd.DataFrame()
 df_diario_total = pd.DataFrame()
+df_diario_ica_total = pd.DataFrame()
 
 for hoja in xls.sheet_names:
     print(f"\n── Hoja: {hoja} ──")
@@ -86,6 +90,11 @@ for hoja in xls.sheet_names:
                              bandas=BANDAS_NOM, orden_cat=ORDEN_CAT)
     if not df_dia.empty:
         df_diario_total = pd.concat([df_diario_total, df_dia])
+
+    df_dia_ica = procesar_ica_diario(**args, ventanas=VENTANAS_NADF,
+                                     bandas=BANDAS_NADF)
+    if not df_dia_ica.empty:
+        df_diario_ica_total = pd.concat([df_diario_ica_total, df_dia_ica])
 
 # ── ICA ───────────────────────────────────────────────────────────────────────
 print("\nGuardando ICA...")
@@ -134,6 +143,26 @@ guardar_diccionario_excel(SALIDA_DIARIO, diccionario_diario, "DIARIO", "Fecha")
 print("  ✓ datos_calidad_aire_DIARIO.xlsx")
 print("    Hojas:", list(diccionario_diario.keys()))
 
+
+# ── DIARIO ICA (NADF-009) ────────────────────────────────────────────────────
+print("\nGuardando DIARIO ICA...")
+# Combinar con existente: es_diario=False porque el DataFrame tiene índice (fecha sin hora)
+df_ica_d_general = combinar_con_existente(
+    df_diario_ica_total, SALIDA_ICA_DIARIO, "General", "Fecha", es_diario=False
+)
+# Ordenar columnas ICA (las mismas que en el horario)
+df_ica_d_general = df_ica_d_general[ordenar_columnas_ica(df_ica_d_general)]
+print(f"  Rango: {df_ica_d_general.index.min()} → {df_ica_d_general.index.max()}  |  filas: {len(df_ica_d_general)}")
+
+# Diccionario de hojas: General + estaciones + zonas
+diccionario_ica_d = {"General": df_ica_d_general}
+diccionario_ica_d.update(extraer_estaciones_ica(df_ica_d_general))
+# Construir hojas de zona (tipo "ICA" no agrega columna de calidad)
+diccionario_ica_d.update(construir_hojas_zonas(df_ica_d_general, ZONAS, tipo="ICA"))
+
+guardar_diccionario_excel(SALIDA_ICA_DIARIO, diccionario_ica_d, "ICA", "Fecha")
+print("  ✓ datos_calidad_aire_DIARIO_ICA.xlsx")
+print("    Hojas:", list(diccionario_ica_d.keys()))
 
 
 """
