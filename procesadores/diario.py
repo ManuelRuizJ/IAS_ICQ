@@ -22,6 +22,7 @@ from procesadores.nom import (
     redondear_nom,
     peor_categoria,
     UNIDAD_DISPLAY,
+    descartar_cero_por_redondeo
 )
 
 
@@ -111,14 +112,27 @@ def procesar_diario(
             )
             clave_bandas = f"{contaminante}_ppm"
 
+                # ... determinas clave_bandas, valor_redondeado, etc. como antes ...
         if clave_bandas not in bandas:
             continue
 
+        # --- AQUÍ SE APLICA EL DESCARTE (dentro del bucle) ---
+        # Determinar decimales según el contaminante
+        if clave_orig in ("PM10_ug/m3", "PM2.5_ug/m3"):
+            decimales = 0
+        elif clave_orig == "CO_ppm":
+            decimales = 2
+        else:
+            decimales = 3
+        # Aplicar descarte
+        valor_redondeado = valor_redondeado.apply(lambda v: descartar_cero_por_redondeo(v, decimales))
+        # Recalcular categorías con los valores ya descartados
         categorias = [clasificar_nom(v, bandas[clave_bandas]) for v in valor_redondeado]
+        # --- fin del descarte ---
 
-        col_cat  = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
+        col_cat = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
         col_cant = f"CANTIDAD_{etiqueta_unidad}_{contaminante}_{estacion}"
-        df_dia[col_cat]  = categorias
+        df_dia[col_cat] = categorias
         df_dia[col_cant] = valor_redondeado.values
 
     df_dia = df_dia.dropna(how="all")

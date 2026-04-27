@@ -22,6 +22,23 @@ import pandas as pd
 from procesadores.ica import promedio_movil_simple
 
 
+def descartar_cero_por_redondeo(valor, decimales):
+    """
+    Retorna np.nan si el valor redondeado es cero en los decimales significativos.
+    - decimales = 0 para PM10, PM2.5
+    - decimales = 2 para CO
+    - decimales = 3 para O3, NO2, SO2
+    """
+    if pd.isna(valor):
+        return np.nan
+    # Redondear al número de decimales indicado
+    redondeado = round(valor, decimales)
+    # Si el redondeo es cero, descartar
+    if redondeado == 0:
+        return np.nan
+    return redondeado
+
+
 # ── Unidades canónicas por clave ─────────────────────────────────────────────
 # Se usa para construir el prefijo de unidad en los nombres de columna.
 UNIDAD_DISPLAY = {
@@ -162,7 +179,7 @@ def procesar_aire(
     bandas:        dict,
     orden_cat:     dict,
     suficiencia:   float,
-) -> pd.DataFrame:
+    ) -> pd.DataFrame:
     """
     Calcula la categoría NOM-172 horaria para cada par (contaminante, estación).
 
@@ -228,9 +245,19 @@ def procesar_aire(
             continue
 
         conc_redondeada = [redondear_nom(x, contaminante, unidad) for x in conc_base]
-        categorias      = [clasificar_nom(x, bandas[clave_bandas]) for x in conc_redondeada]
 
-        col_cat  = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
+        if contaminante in ["PM10", "PM2.5"]:
+            decimales = 0
+        elif contaminante == "CO":
+            decimales = 2
+        else:  # O3, NO2, SO2
+            decimales = 3
+
+        conc_redondeada = [descartar_cero_por_redondeo(x, decimales) for x in conc_redondeada]
+
+        categorias = [clasificar_nom(x, bandas[clave_bandas]) for x in conc_redondeada]
+
+        col_cat = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
         col_cant = f"CANTIDAD_{etiqueta_unidad}_{contaminante}_{estacion}"
 
         df_hoja[col_cat]  = categorias
