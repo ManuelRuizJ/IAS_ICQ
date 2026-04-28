@@ -10,11 +10,11 @@ import pandas as pd
 
 
 def combinar_con_existente(
-    df_nuevo:     pd.DataFrame,
-    archivo:      str,
-    nombre_hoja:  str,
-    col_fecha:    str,
-    es_diario:    bool = False,
+    df_nuevo: pd.DataFrame,
+    archivo: str,
+    nombre_hoja: str,
+    col_fecha: str,
+    es_diario: bool = False,
 ) -> pd.DataFrame:
     """
     Lee la hoja `nombre_hoja` del archivo Excel existente y la combina
@@ -39,24 +39,31 @@ def combinar_con_existente(
     try:
         if es_diario:
             df_existente = pd.read_excel(
-                archivo, sheet_name=nombre_hoja,
-                engine='openpyxl', index_col=None,
+                archivo,
+                sheet_name=nombre_hoja,
+                engine="openpyxl",
+                index_col=None,
             )
-            fecha_col = col_fecha if col_fecha in df_existente.columns \
-                        else df_existente.columns[0]
+            fecha_col = (
+                col_fecha
+                if col_fecha in df_existente.columns
+                else df_existente.columns[0]
+            )
             df_existente[fecha_col] = pd.to_datetime(df_existente[fecha_col])
             df_existente.set_index(fecha_col, inplace=True)
             df_existente.index.name = col_fecha
         else:
             df_existente = pd.read_excel(
-                archivo, sheet_name=nombre_hoja,
-                engine='openpyxl', index_col=0,
+                archivo,
+                sheet_name=nombre_hoja,
+                engine="openpyxl",
+                index_col=0,
             )
             if not isinstance(df_existente.index, pd.DatetimeIndex):
                 df_existente.index = pd.to_datetime(df_existente.index)
 
         df_combinado = pd.concat([df_existente, df_nuevo], axis=0, sort=False)
-        df_combinado = df_combinado[~df_combinado.index.duplicated(keep='last')]
+        df_combinado = df_combinado[~df_combinado.index.duplicated(keep="last")]
         df_combinado.sort_index(inplace=True)
         return df_combinado
 

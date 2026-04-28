@@ -42,16 +42,17 @@ def descartar_cero_por_redondeo(valor, decimales):
 # ── Unidades canónicas por clave ─────────────────────────────────────────────
 # Se usa para construir el prefijo de unidad en los nombres de columna.
 UNIDAD_DISPLAY = {
-    "O3_ppb":      "ppb",
-    "NO2_ppb":     "ppb",
-    "SO2_ppb":     "ppb",
-    "CO_ppm":      "ppm",
-    "PM10_ug/m3":  "ug/m3",
+    "O3_ppb": "ppb",
+    "NO2_ppb": "ppb",
+    "SO2_ppb": "ppb",
+    "CO_ppm": "ppm",
+    "PM10_ug/m3": "ug/m3",
     "PM2.5_ug/m3": "ug/m3",
 }
 
 
 # ── Funciones matemáticas base ───────────────────────────────────────────────
+
 
 def clasificar_nom(conc: float, bandas: list):
     """
@@ -113,10 +114,10 @@ def nowcast_12h(serie: pd.Series, pollutant: str) -> pd.Series:
         if inicio < 0:
             continue
 
-        ventana = valores[inicio: t + 1]   # 12 elementos, ventana[11] = hora t
+        ventana = valores[inicio : t + 1]  # 12 elementos, ventana[11] = hora t
 
         # Condición: ≥2 de las 3 horas más recientes con dato
-        ultimas3 = ventana[9:]             # índices 9,10,11 → horas t-2,t-1,t
+        ultimas3 = ventana[9:]  # índices 9,10,11 → horas t-2,t-1,t
         if np.sum(~np.isnan(ultimas3)) < 2:
             continue
 
@@ -133,8 +134,8 @@ def nowcast_12h(serie: pd.Series, pollutant: str) -> pd.Series:
         # i=12 es la hora más antigua (índice 0 en ventana)
         suma_num = suma_den = 0.0
         for offset in range(12):
-            i = offset + 1                 # i va de 1 (más reciente) a 12
-            idx_ventana = 11 - offset      # índice dentro de 'ventana'
+            i = offset + 1  # i va de 1 (más reciente) a 12
+            idx_ventana = 11 - offset  # índice dentro de 'ventana'
             c = ventana[idx_ventana]
             if not np.isnan(c):
                 w_i = W ** (i - 1)
@@ -169,17 +170,18 @@ def peor_categoria(series_categorias: list, orden: dict, umbral: float = 0.75):
 
 # ── Procesador de alto nivel ─────────────────────────────────────────────────
 
+
 def procesar_aire(
-    estaciones:    np.ndarray,
+    estaciones: np.ndarray,
     contaminantes: np.ndarray,
-    unidades:      np.ndarray,
-    data_df:       pd.DataFrame,
+    unidades: np.ndarray,
+    data_df: pd.DataFrame,
     num_orig_cols: int,
-    ventanas:      dict,
-    bandas:        dict,
-    orden_cat:     dict,
-    suficiencia:   float,
-    ) -> pd.DataFrame:
+    ventanas: dict,
+    bandas: dict,
+    orden_cat: dict,
+    suficiencia: float,
+) -> pd.DataFrame:
     """
     Calcula la categoría NOM-172 horaria para cada par (contaminante, estación).
 
@@ -198,14 +200,17 @@ def procesar_aire(
     df_hoja = pd.DataFrame(index=data_df.index)
 
     for i in range(1, num_orig_cols):
-        col_in_data  = i - 1
-        estacion     = estaciones[i]
+        col_in_data = i - 1
+        estacion = estaciones[i]
         contaminante = contaminantes[i]
-        unidad       = unidades[i]
+        unidad = unidades[i]
 
-        if isinstance(contaminante, str): contaminante = contaminante.strip()
-        if isinstance(unidad, str):       unidad       = unidad.strip()
-        if isinstance(estacion, str):     estacion     = estacion.strip()
+        if isinstance(contaminante, str):
+            contaminante = contaminante.strip()
+        if isinstance(unidad, str):
+            unidad = unidad.strip()
+        if isinstance(estacion, str):
+            estacion = estacion.strip()
 
         if not isinstance(contaminante, str) or contaminante.lower() == "status":
             continue
@@ -222,23 +227,23 @@ def procesar_aire(
         # Filtrar por status "Ok"
         if i + 1 < num_orig_cols:
             status_str = data_df.iloc[:, i].astype(str).str.strip().str.lower()
-            valores    = valores.where(status_str == "ok", np.nan)
+            valores = valores.where(status_str == "ok", np.nan)
 
         valores = valores.where(valores >= 0, np.nan)
 
         # ── Concentración base según NOM-172-2023 Tabla 3 ────────────────────
         if clave_orig in ("PM10_ug/m3", "PM2.5_ug/m3"):
-            tipo         = "PM10" if "PM10" in clave_orig else "PM2.5"
-            conc_base    = nowcast_12h(valores, tipo)
+            tipo = "PM10" if "PM10" in clave_orig else "PM2.5"
+            conc_base = nowcast_12h(valores, tipo)
             clave_bandas = clave_orig
 
         elif clave_orig == "CO_ppm":
-            conc_base    = promedio_movil_simple(valores, 8, suficiencia)
+            conc_base = promedio_movil_simple(valores, 8, suficiencia)
             clave_bandas = "CO_ppm"
 
         else:
             # O3, NO2, SO2: promedio horario en ppm (convertir de ppb)
-            conc_base    = valores / 1000.0
+            conc_base = valores / 1000.0
             clave_bandas = f"{contaminante}_ppm"
 
         if clave_bandas not in bandas:
@@ -253,14 +258,16 @@ def procesar_aire(
         else:  # O3, NO2, SO2
             decimales = 3
 
-        conc_redondeada = [descartar_cero_por_redondeo(x, decimales) for x in conc_redondeada]
+        conc_redondeada = [
+            descartar_cero_por_redondeo(x, decimales) for x in conc_redondeada
+        ]
 
         categorias = [clasificar_nom(x, bandas[clave_bandas]) for x in conc_redondeada]
 
         col_cat = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
         col_cant = f"CANTIDAD_{etiqueta_unidad}_{contaminante}_{estacion}"
 
-        df_hoja[col_cat]  = categorias
+        df_hoja[col_cat] = categorias
         df_hoja[col_cant] = conc_redondeada
 
     df_hoja = df_hoja.dropna(how="all")

@@ -26,6 +26,8 @@ for archivo in archivos:
             # Filtrar valores no nulos y que sean igual a 0
             cero_count += (df[col].notna() & (df[col] == 0)).sum()
         if cero_count > 0:
-            print(f"{archivo} - hoja '{hoja}': cantidad de ceros en columnas de cantidad = {cero_count}")
+            print(
+                f"{archivo} - hoja '{hoja}': cantidad de ceros en columnas de cantidad = {cero_count}"
+            )
         else:
             print(f"{archivo} - hoja '{hoja}': ✅ sin ceros en columnas de cantidad")

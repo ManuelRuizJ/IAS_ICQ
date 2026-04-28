@@ -23,14 +23,15 @@ from formato.aire_formato import aplicar_formato_aire
 
 # ── Patrones de columna ──────────────────────────────────────────────────────
 # AIRE_<unidad>_<contaminante>_<estacion>
-_PAT_AIRE = re.compile(r'^AIRE_([^_]+)_([^_]+)_(.+)$')
+_PAT_AIRE = re.compile(r"^AIRE_([^_]+)_([^_]+)_(.+)$")
 # CANTIDAD_<unidad>_<contaminante>_<estacion>
-_PAT_CANT = re.compile(r'^CANTIDAD_([^_]+)_([^_]+)_(.+)$')
+_PAT_CANT = re.compile(r"^CANTIDAD_([^_]+)_([^_]+)_(.+)$")
 # ICA_<contaminante>_<estacion>
-_PAT_ICA  = re.compile(r'^ICA_([^_]+)_(.+)$')
+_PAT_ICA = re.compile(r"^ICA_([^_]+)_(.+)$")
 
 
 # ── Ordenación de columnas ───────────────────────────────────────────────────
+
 
 def ordenar_columnas_ica(df: pd.DataFrame) -> list:
     """Columnas ICA ordenadas por (estación, contaminante)."""
@@ -38,11 +39,11 @@ def ordenar_columnas_ica(df: pd.DataFrame) -> list:
     for col in df.columns:
         m = _PAT_ICA.match(col)
         if m:
-            pares.add((m.group(1), m.group(2)))   # (contaminante, estacion)
+            pares.add((m.group(1), m.group(2)))  # (contaminante, estacion)
 
     pares_ord = sorted(pares, key=lambda x: (x[1], x[0]))
-    cols_ord  = [f"ICA_{cont}_{est}" for cont, est in pares_ord]
-    resto     = [c for c in df.columns if c not in cols_ord]
+    cols_ord = [f"ICA_{cont}_{est}" for cont, est in pares_ord]
+    resto = [c for c in df.columns if c not in cols_ord]
     return cols_ord + resto
 
 
@@ -59,12 +60,14 @@ def ordenar_columnas_aire(df: pd.DataFrame) -> list:
             pares.add((m.group(1), m.group(2), m.group(3)))
 
     pares_ord = sorted(pares, key=lambda x: (x[2], x[1]))  # por estacion, cont
-    cols_ord  = []
+    cols_ord = []
     for unidad, cont, est in pares_ord:
-        cat  = f"AIRE_{unidad}_{cont}_{est}"
+        cat = f"AIRE_{unidad}_{cont}_{est}"
         cant = f"CANTIDAD_{unidad}_{cont}_{est}"
-        if cat  in df.columns: cols_ord.append(cat)
-        if cant in df.columns: cols_ord.append(cant)
+        if cat in df.columns:
+            cols_ord.append(cat)
+        if cant in df.columns:
+            cols_ord.append(cant)
 
     if "Calidad del aire" in df.columns:
         cols_ord.append("Calidad del aire")
@@ -74,6 +77,7 @@ def ordenar_columnas_aire(df: pd.DataFrame) -> list:
 
 
 # ── Extracción de hojas por estación ────────────────────────────────────────
+
 
 def extraer_estaciones_ica(df: pd.DataFrame) -> dict:
     """Divide el DataFrame ICA general en sub-DataFrames por estación."""
@@ -85,13 +89,18 @@ def extraer_estaciones_ica(df: pd.DataFrame) -> dict:
 
     resultado = {}
     for est in sorted(estaciones):
-        cols = [c for c in df.columns if _PAT_ICA.match(c)
-                and _PAT_ICA.match(c).group(2) == est]
+        cols = [
+            c
+            for c in df.columns
+            if _PAT_ICA.match(c) and _PAT_ICA.match(c).group(2) == est
+        ]
         resultado[est] = df[cols].copy()
     return resultado
 
 
-def extraer_estaciones_aire(df: pd.DataFrame, orden_cat: dict, suficiencia: float) -> dict:
+def extraer_estaciones_aire(
+    df: pd.DataFrame, orden_cat: dict, suficiencia: float
+) -> dict:
     """
     Divide el DataFrame AIRE/DIARIO en sub-DataFrames por estación,
     recalculando 'Calidad del aire' para cada una.
@@ -100,14 +109,20 @@ def extraer_estaciones_aire(df: pd.DataFrame, orden_cat: dict, suficiencia: floa
     for col in df.columns:
         m = _PAT_AIRE.match(col) or _PAT_CANT.match(col)
         if m:
-            estaciones.add(m.group(3))   # grupo 3 = estacion
+            estaciones.add(m.group(3))  # grupo 3 = estacion
 
     resultado = {}
     for est in sorted(estaciones):
-        cols_cat  = [c for c in df.columns
-                     if _PAT_AIRE.match(c) and _PAT_AIRE.match(c).group(3) == est]
-        cols_cant = [c for c in df.columns
-                     if _PAT_CANT.match(c) and _PAT_CANT.match(c).group(3) == est]
+        cols_cat = [
+            c
+            for c in df.columns
+            if _PAT_AIRE.match(c) and _PAT_AIRE.match(c).group(3) == est
+        ]
+        cols_cant = [
+            c
+            for c in df.columns
+            if _PAT_CANT.match(c) and _PAT_CANT.match(c).group(3) == est
+        ]
 
         df_est = df[cols_cat + cols_cant].copy()
 
@@ -127,10 +142,12 @@ def extraer_estaciones_aire(df: pd.DataFrame, orden_cat: dict, suficiencia: floa
 
         cols_ord = []
         for unidad, cont in sorted(pares, key=lambda x: x[1]):
-            cat  = f"AIRE_{unidad}_{cont}_{est}"
+            cat = f"AIRE_{unidad}_{cont}_{est}"
             cant = f"CANTIDAD_{unidad}_{cont}_{est}"
-            if cat  in df_est.columns: cols_ord.append(cat)
-            if cant in df_est.columns: cols_ord.append(cant)
+            if cat in df_est.columns:
+                cols_ord.append(cat)
+            if cant in df_est.columns:
+                cols_ord.append(cant)
         if "Calidad del aire" in df_est.columns:
             cols_ord.append("Calidad del aire")
 
@@ -141,11 +158,12 @@ def extraer_estaciones_aire(df: pd.DataFrame, orden_cat: dict, suficiencia: floa
 
 # ── Escritura del Excel final ────────────────────────────────────────────────
 
+
 def guardar_diccionario_excel(
-    archivo:         str,
+    archivo: str,
     diccionario_dfs: dict,
-    tipo:            str,
-    nombre_indice:   str,
+    tipo: str,
+    nombre_indice: str,
 ) -> None:
     """
     Escribe todas las hojas del diccionario en el archivo Excel y aplica

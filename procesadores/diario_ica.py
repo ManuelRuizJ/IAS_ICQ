@@ -13,17 +13,18 @@ Se generan columnas: ICA_<contaminante>_<estacion> (sin unidad).
 import numpy as np
 import pandas as pd
 
-from procesadores.ica import promedio_movil_simple, calcular_ica
+from procesadores.ica import calcular_ica
+
 
 def procesar_ica_diario(
-    estaciones:    np.ndarray,
+    estaciones: np.ndarray,
     contaminantes: np.ndarray,
-    unidades:      np.ndarray,
-    data_df:       pd.DataFrame,
+    unidades: np.ndarray,
+    data_df: pd.DataFrame,
     num_orig_cols: int,
-    ventanas:      dict,   # se usa para saber la ventana de 24h para cada contaminante
-    bandas:        dict,
-    suficiencia:   float,
+    ventanas: dict,  # se usa para saber la ventana de 24h para cada contaminante
+    bandas: dict,
+    suficiencia: float,
 ) -> pd.DataFrame:
     """
     Genera un DataFrame diario con el ICA (NADF-009).
@@ -36,14 +37,17 @@ def procesar_ica_diario(
     df_dia = pd.DataFrame(index=dias_ordenados)
 
     for i in range(1, num_orig_cols):
-        col_in_data  = i - 1
-        estacion     = estaciones[i]
+        col_in_data = i - 1
+        estacion = estaciones[i]
         contaminante = contaminantes[i]
-        unidad       = unidades[i]
+        unidad = unidades[i]
 
-        if isinstance(contaminante, str): contaminante = contaminante.strip()
-        if isinstance(unidad, str):       unidad       = unidad.strip()
-        if isinstance(estacion, str):     estacion     = estacion.strip()
+        if isinstance(contaminante, str):
+            contaminante = contaminante.strip()
+        if isinstance(unidad, str):
+            unidad = unidad.strip()
+        if isinstance(estacion, str):
+            estacion = estacion.strip()
 
         if not isinstance(contaminante, str) or contaminante == "Status":
             continue
@@ -57,7 +61,9 @@ def procesar_ica_diario(
         if i + 1 < num_orig_cols:
             status_str = data_df.iloc[:, i].astype(str).str.strip().str.lower()
             valores = valores.where(status_str == "ok", np.nan)
-        valores = valores.where(valores > 0, np.nan)  # NADF descarta negativos y cero? (según tu código, >0)
+        valores = valores.where(
+            valores > 0, np.nan
+        )  # NADF descarta negativos y cero? (según tu código, >0)
 
         serie_valores = pd.Series(valores.values, index=data_df.index)
 
@@ -77,8 +83,11 @@ def procesar_ica_diario(
         if clave_bandas not in bandas:
             continue
 
-        ica_lista = [calcular_ica(x, bandas[clave_bandas]) if not pd.isna(x) else np.nan for x in valor_diario]
-        ica_lista = [np.nan if x == 0 else x for x in ica_lista] 
+        ica_lista = [
+            calcular_ica(x, bandas[clave_bandas]) if not pd.isna(x) else np.nan
+            for x in valor_diario
+        ]
+        ica_lista = [np.nan if x == 0 else x for x in ica_lista]
         df_dia[f"ICA_{contaminante}_{estacion}"] = ica_lista
 
     df_dia = df_dia.dropna(how="all")
