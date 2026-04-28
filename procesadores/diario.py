@@ -130,8 +130,9 @@ def procesar_diario(
         categorias = [clasificar_nom(v, bandas[clave_bandas]) for v in valor_redondeado]
         # --- fin del descarte ---
 
-        col_cat = f"AIRE_{etiqueta_unidad}_{contaminante}_{estacion}"
+        col_cat = f"AIRE_{contaminante}_{estacion}"
         col_cant = f"CANTIDAD_{etiqueta_unidad}_{contaminante}_{estacion}"
+        
         df_dia[col_cat] = categorias
         df_dia[col_cant] = valor_redondeado.values
 

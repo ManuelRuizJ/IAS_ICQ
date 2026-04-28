@@ -19,8 +19,8 @@ with open("config.json", "r", encoding="utf-8") as _f:
 
 COLORES_NOM: dict = _cfg["NOM"]["colores"]
 
-# Patrón para detectar contaminante dentro del nombre de columna CANTIDAD_
-_PAT_CANT = re.compile(r'^CANTIDAD_[^_]+_([^_]+)_')
+# en formato/aire_formato.py
+_PAT_CANT = re.compile(r'^CANTIDAD_[^_]+_([^_]+)_')  # grupo1: contaminante
 
 
 def aplicar_formato_aire(ws) -> None:
