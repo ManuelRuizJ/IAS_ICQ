@@ -11,12 +11,11 @@ from openpyxl.utils import get_column_letter
 
 
 # Cargar colores desde config al importar el módulo
-with open('config.json', 'r', encoding='utf-8') as _f:
+with open("config.json", "r", encoding="utf-8") as _f:
     _cfg = json.load(_f)
 
 COLORES_NADF: dict = {
-    tuple(map(int, k.split('-'))): v
-    for k, v in _cfg['NADF']['colores'].items()
+    tuple(map(int, k.split("-"))): v for k, v in _cfg["NADF"]["colores"].items()
 }
 
 
@@ -44,7 +43,7 @@ def aplicar_formato_ica(ws) -> None:
     for row in ws.iter_rows():
         for cell in row:
             cell.alignment = Alignment(
-                wrap_text=True, horizontal='center', vertical='center'
+                wrap_text=True, horizontal="center", vertical="center"
             )
 
     # Encabezado en negrita
@@ -62,14 +61,12 @@ def aplicar_formato_ica(ws) -> None:
                 color = obtener_color_ica(int(cell.value))
                 if color:
                     cell.fill = PatternFill(
-                        start_color=color, end_color=color, fill_type='solid'
+                        start_color=color, end_color=color, fill_type="solid"
                     )
 
     # Ancho de columnas
     for col in ws.columns:
-        max_len = max(
-            (len(str(cell.value)) for cell in col if cell.value), default=0
-        )
+        max_len = max((len(str(cell.value)) for cell in col if cell.value), default=0)
         ws.column_dimensions[get_column_letter(col[0].column)].width = min(
             max_len + 4, 50
         )

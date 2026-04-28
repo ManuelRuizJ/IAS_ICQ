@@ -19,23 +19,22 @@ import pandas as pd
 from procesadores.ica import promedio_movil_simple
 from procesadores.nom import (
     clasificar_nom,
-    redondear_nom,
     peor_categoria,
     UNIDAD_DISPLAY,
-    descartar_cero_por_redondeo
+    descartar_cero_por_redondeo,
 )
 
 
 def procesar_diario(
-    estaciones:    np.ndarray,
+    estaciones: np.ndarray,
     contaminantes: np.ndarray,
-    unidades:      np.ndarray,
-    data_df:       pd.DataFrame,
+    unidades: np.ndarray,
+    data_df: pd.DataFrame,
     num_orig_cols: int,
-    ventanas:      dict,
-    bandas:        dict,
-    orden_cat:     dict,
-    suficiencia:   float,
+    ventanas: dict,
+    bandas: dict,
+    orden_cat: dict,
+    suficiencia: float,
 ) -> pd.DataFrame:
     """
     Genera un DataFrame con un registro por día calendario.
@@ -54,14 +53,17 @@ def procesar_diario(
     df_dia = pd.DataFrame(index=dias_ordenados)
 
     for i in range(1, num_orig_cols):
-        col_in_data  = i - 1
-        estacion     = estaciones[i]
+        col_in_data = i - 1
+        estacion = estaciones[i]
         contaminante = contaminantes[i]
-        unidad       = unidades[i]
+        unidad = unidades[i]
 
-        if isinstance(contaminante, str): contaminante = contaminante.strip()
-        if isinstance(unidad, str):       unidad       = unidad.strip()
-        if isinstance(estacion, str):     estacion     = estacion.strip()
+        if isinstance(contaminante, str):
+            contaminante = contaminante.strip()
+        if isinstance(unidad, str):
+            unidad = unidad.strip()
+        if isinstance(estacion, str):
+            estacion = estacion.strip()
 
         if not isinstance(contaminante, str) or contaminante == "Status":
             continue
@@ -77,15 +79,15 @@ def procesar_diario(
         # Filtrar por status "Ok"
         if i + 1 < num_orig_cols:
             status_str = data_df.iloc[:, i].astype(str).str.strip().str.lower()
-            valores    = valores.where(status_str == "ok", np.nan)
+            valores = valores.where(status_str == "ok", np.nan)
 
-        valores       = valores.where(valores >= 0, np.nan)
+        valores = valores.where(valores >= 0, np.nan)
         serie_valores = pd.Series(valores.values, index=data_df.index)
 
         # ── Concentración diaria representativa (NOM-172-2023 Tabla 3) ───────
         if clave_orig in ("PM10_ug/m3", "PM2.5_ug/m3"):
             # Promedio de 24 h con suficiencia mínima
-            min_horas    = int(np.ceil(24 * suficiencia))
+            min_horas = int(np.ceil(24 * suficiencia))
             valor_diario = serie_valores.resample("D").apply(
                 lambda x: x.mean() if x.count() >= min_horas else np.nan
             )
@@ -96,7 +98,7 @@ def procesar_diario(
 
         elif clave_orig == "CO_ppm":
             # Máximo del promedio móvil de 8 h
-            prom_8h      = promedio_movil_simple(serie_valores, 8, suficiencia)
+            prom_8h = promedio_movil_simple(serie_valores, 8, suficiencia)
             valor_diario = prom_8h.resample("D").max()
             valor_redondeado = valor_diario.apply(
                 lambda v: round(v, 2) if not pd.isna(v) else np.nan
@@ -105,14 +107,14 @@ def procesar_diario(
 
         else:
             # O3, NO2, SO2: máximo del promedio horario (convertido a ppm)
-            serie_ppm    = serie_valores / 1000.0
+            serie_ppm = serie_valores / 1000.0
             valor_diario = serie_ppm.resample("D").max()
             valor_redondeado = valor_diario.apply(
                 lambda v: round(v, 3) if not pd.isna(v) else np.nan
             )
             clave_bandas = f"{contaminante}_ppm"
 
-                # ... determinas clave_bandas, valor_redondeado, etc. como antes ...
+            # ... determinas clave_bandas, valor_redondeado, etc. como antes ...
         if clave_bandas not in bandas:
             continue
 
@@ -125,7 +127,9 @@ def procesar_diario(
         else:
             decimales = 3
         # Aplicar descarte
-        valor_redondeado = valor_redondeado.apply(lambda v: descartar_cero_por_redondeo(v, decimales))
+        valor_redondeado = valor_redondeado.apply(
+            lambda v: descartar_cero_por_redondeo(v, decimales)
+        )
         # Recalcular categorías con los valores ya descartados
         categorias = [clasificar_nom(v, bandas[clave_bandas]) for v in valor_redondeado]
         # --- fin del descarte ---

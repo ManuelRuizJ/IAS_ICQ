@@ -31,15 +31,14 @@ Uso
 
 import re
 import pandas as pd
-import numpy as np
 
 from procesadores.nom import peor_categoria
 
 
 # Patrones de columna (mismos que en exportador.py)
-_PAT_AIRE = re.compile(r'^AIRE_([^_]+)_([^_]+)_(.+)$')
-_PAT_CANT = re.compile(r'^CANTIDAD_([^_]+)_([^_]+)_(.+)$')
-_PAT_ICA  = re.compile(r'^ICA_([^_]+)_(.+)$')
+_PAT_AIRE = re.compile(r"^AIRE_([^_]+)_([^_]+)_(.+)$")
+_PAT_CANT = re.compile(r"^CANTIDAD_([^_]+)_([^_]+)_(.+)$")
+_PAT_ICA = re.compile(r"^ICA_([^_]+)_(.+)$")
 
 
 def _estacion_de_columna(col: str) -> str | None:
@@ -47,15 +46,15 @@ def _estacion_de_columna(col: str) -> str | None:
     for pat in (_PAT_ICA, _PAT_AIRE, _PAT_CANT):
         m = pat.match(col)
         if m:
-            return m.group(m.lastindex)   # último grupo capturado = estación
+            return m.group(m.lastindex)  # último grupo capturado = estación
     return None
 
 
 def construir_hojas_zonas(
-    df_general:  pd.DataFrame,
-    zonas:       dict,
-    tipo:        str,
-    orden_cat:   dict | None = None,
+    df_general: pd.DataFrame,
+    zonas: dict,
+    tipo: str,
+    orden_cat: dict | None = None,
     suficiencia: float = 0.75,
 ) -> dict:
     """
@@ -78,8 +77,7 @@ def construir_hojas_zonas(
     for nombre_zona, estaciones in zonas.items():
         # Seleccionar columnas que pertenecen a alguna estación de la zona
         cols_zona = [
-            col for col in df_general.columns
-            if _estacion_de_columna(col) in estaciones
+            col for col in df_general.columns if _estacion_de_columna(col) in estaciones
         ]
 
         if not cols_zona:
@@ -89,15 +87,15 @@ def construir_hojas_zonas(
         df_zona = df_general[cols_zona].copy()
 
         # Agregar columna de calidad de zona (solo AIRE/DIARIO, no ICA)
-        if tipo in ('AIRE', 'DIARIO') and orden_cat:
-            cols_cat = [c for c in cols_zona if c.startswith('AIRE_')]
+        if tipo in ("AIRE", "DIARIO") and orden_cat:
+            cols_cat = [c for c in cols_zona if c.startswith("AIRE_")]
             if cols_cat:
-                df_zona['Calidad del aire zona'] = peor_categoria(
+                df_zona["Calidad del aire zona"] = peor_categoria(
                     [df_zona[c] for c in cols_cat],
                     orden_cat,
                     umbral=suficiencia,
                 )
 
-        resultado[nombre_zona[:31]] = df_zona   # límite Excel 31 chars
+        resultado[nombre_zona[:31]] = df_zona  # límite Excel 31 chars
 
     return resultado

@@ -19,8 +19,13 @@ with open("config.json", "r", encoding="utf-8") as _f:
 
 COLORES_NOM: dict = _cfg["NOM"]["colores"]
 
+<<<<<<< HEAD
+# Patrón para detectar contaminante dentro del nombre de columna CANTIDAD_
+_PAT_CANT = re.compile(r"^CANTIDAD_[^_]+_([^_]+)_")
+=======
 # en formato/aire_formato.py
 _PAT_CANT = re.compile(r'^CANTIDAD_[^_]+_([^_]+)_')  # grupo1: contaminante
+>>>>>>> main
 
 
 def aplicar_formato_aire(ws) -> None:
@@ -31,8 +36,9 @@ def aplicar_formato_aire(ws) -> None:
     for col in ws.iter_cols(min_row=1, max_row=1):
         nombre = col[0].value
         if isinstance(nombre, str):
-            if (nombre.startswith("AIRE_") and "CANTIDAD" not in nombre) \
-               or nombre == "Calidad del aire":
+            if (
+                nombre.startswith("AIRE_") and "CANTIDAD" not in nombre
+            ) or nombre == "Calidad del aire":
                 columnas_cat.append(col[0].column)
 
     # Alineación global
@@ -55,8 +61,9 @@ def aplicar_formato_aire(ws) -> None:
                     end_color=COLORES_NOM[cell.value],
                     fill_type="solid",
                 )
-                color_fuente = "000000" if cell.value in ("Buena", "Aceptable") \
-                               else "FFFFFF"
+                color_fuente = (
+                    "000000" if cell.value in ("Buena", "Aceptable") else "FFFFFF"
+                )
                 cell.font = Font(bold=True, color=color_fuente)
 
     # Formato numérico en columnas de cantidad (detecta contaminante por regex)
@@ -77,9 +84,7 @@ def aplicar_formato_aire(ws) -> None:
 
     # Ancho automático
     for col in ws.columns:
-        max_len = max(
-            (len(str(cell.value)) for cell in col if cell.value), default=0
-        )
+        max_len = max((len(str(cell.value)) for cell in col if cell.value), default=0)
         ws.column_dimensions[get_column_letter(col[0].column)].width = min(
             max_len + 4, 50
         )
