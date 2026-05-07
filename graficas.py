@@ -793,7 +793,249 @@ def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, gru
     ax.grid(True, alpha=0.3)
     pie_fig(fig)
     guardar(fig, f"13_perfil_horario_{grupo}_{tag}")
-    
+
+# ============================================================================
+# GRÁFICAS ADICIONALES (G14 - G25)
+# ============================================================================
+
+# G14 — Evolución del ICA (línea temporal) - por zona y contaminante
+def g14_evolucion_ica_linea(df_ica, cont, ests, nombre_zona, periodo, tag):
+    cols = [f"ICA_{cont}_{e}" for e in ests if f"ICA_{cont}_{e}" in df_ica.columns]
+    if not cols:
+        return
+    fig, ax = plt.subplots(figsize=(14, 5))
+    for col in cols:
+        est = "_".join(col.split("_")[2:])
+        s = df_ica[col].dropna()
+        if s.empty:
+            continue
+        ax.plot(s.index, s, label=nombre(est), lw=0.9, alpha=0.85)
+    ax.axhline(100, color="red", ls="--", lw=1.2, label="ICA = 100")
+    ax.set_title(f"Evolución del ICA – {cont}\n{nombre_zona}  |  Periodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("ICA (adimensional, NADF-009)")
+    ax.legend(loc="upper right", framealpha=0.88)
+    fig.autofmt_xdate()
+    pie_fig(fig)
+    guardar(fig, f"14_evolucion_ica_{cont}_{tag}")
+
+# G15 — Boxplot de concentraciones por estación
+def g15_boxplot_contaminante(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    datos = []
+    etiquetas = []
+    for est in ests:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
+        if not cols:
+            continue
+        serie = df_ias_d[cols[0][0]].dropna()
+        if not serie.empty:
+            datos.append(serie.values)
+            etiquetas.append(nombre(est))
+    if len(datos) < 2:
+        return
+    fig, ax = plt.subplots(figsize=(10, max(5, len(etiquetas)*0.6)))
+    ax.boxplot(datos, labels=etiquetas, showfliers=False)
+    ax.set_title(f"Distribución de {cont} – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Concentración")
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    pie_fig(fig)
+    guardar(fig, f"15_boxplot_{cont}_{tag}")
+
+
+# G16 — Comparativa de promedios entre zonas (barras) - por contaminante
+def g16_comparativa_promedios_zona(df_ias_d, cont, zonas_dict, nombre_zona, periodo, tag):
+    promedios = {}
+    for zona, ests in zonas_dict.items():
+        valores = []
+        for est in ests:
+            cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
+            if cols:
+                valores.append(df_ias_d[cols[0][0]].mean())
+        if valores:
+            promedios[zona] = np.nanmean(valores)
+    if len(promedios) < 2:
+        return
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(promedios.keys(), promedios.values(), color=["#1f77b4", "#ff7f0e"])
+    ax.set_title(f"Concentración promedio de {cont} – Comparación de zonas\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Concentración promedio")
+    pie_fig(fig)
+    guardar(fig, f"16_comparativa_promedios_zona_{cont}_{tag}")
+
+# G17 — Evolución mensual (barras) - por contaminante y zona
+def g17_evolucion_mensual(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
+    if not cols:
+        return
+    serie_prom = df_ias_d[[c for c, _ in cols]].mean(axis=1, skipna=True)
+    mensual = serie_prom.resample("ME").mean()
+    meses = mensual.index.strftime("%b")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.bar(meses, mensual.values, color="teal")
+    ax.set_title(f"Evolución mensual de {cont} – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Concentración promedio")
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    pie_fig(fig)
+    guardar(fig, f"17_evolucion_mensual_{cont}_{tag}")
+
+# G18 — Días fuera de norma (barras verticales) - por zona
+def g18_dias_fuera_norma(df_ias_d, conts, ests, nombre_zona, periodo, tag):
+    resultado = {}
+    for cont in conts:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
+        if not cols:
+            continue
+        serie_prom = df_ias_d[[c for c, _ in cols]].mean(axis=1, skipna=True)
+        lim, _, _ = LIMITES.get(cont, (None, "", ""))
+        if lim is None:
+            continue
+        excedencias = (serie_prom > lim).sum()
+        resultado[cont] = excedencias
+    if not resultado:
+        return
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.bar(resultado.keys(), resultado.values(), color="coral")
+    ax.set_title(f"Días fuera de norma – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Número de días")
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    pie_fig(fig)
+    guardar(fig, f"18_dias_fuera_norma_{tag}")
+
+# G19 — Días fuera de norma por estación (barras horizontales) - por contaminante
+def g19_dias_fuera_norma_estacion(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    lim, _, _ = LIMITES.get(cont, (None, "", ""))
+    if lim is None:
+        return
+    excedencias = {}
+    for est in ests:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
+        if not cols:
+            continue
+        serie = df_ias_d[cols[0][0]]
+        excedencias[nombre(est)] = (serie > lim).sum()
+    if not excedencias:
+        return
+    fig, ax = plt.subplots(figsize=(10, max(4, len(excedencias)*0.5)))
+    ests_ord = sorted(excedencias.items(), key=lambda x: x[1], reverse=True)
+    nombres = [e[0] for e in ests_ord]
+    valores = [e[1] for e in ests_ord]
+    ax.barh(nombres, valores, color="darkred")
+    ax.set_title(f"Días fuera de norma ({cont}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_xlabel("Número de días (> límite NOM)")
+    pie_fig(fig)
+    guardar(fig, f"19_excedencias_estacion_{cont}_{tag}")
+
+# G21 — Porcentaje de días por categoría IAS (torta) - por zona
+def g21_porcentaje_categorias(df_ias_d, nombre_zona, periodo, tag):
+    if "Calidad del aire" not in df_ias_d.columns:
+        return
+    conteo = df_ias_d["Calidad del aire"].value_counts()
+    total = len(df_ias_d)
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.pie(conteo, labels=conteo.index, autopct="%1.1f%%",
+           colors=[COLORES_CAT.get(c, "#cccccc") for c in conteo.index])
+    ax.set_title(f"Distribución de la calidad del aire – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    pie_fig(fig)
+    guardar(fig, f"21_porcentaje_categorias_{tag}")
+
+# G22 — Comparación de estaciones (barras) - por contaminante
+def g22_comparacion_estaciones(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    promedios = {}
+    for est in ests:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
+        if cols:
+            promedios[nombre(est)] = df_ias_d[cols[0][0]].mean()
+    if not promedios:
+        return
+    fig, ax = plt.subplots(figsize=(12, max(5, len(promedios)*0.5)))
+    nombres = list(promedios.keys())
+    valores = list(promedios.values())
+    lim, _, _ = LIMITES.get(cont, (None, "", ""))
+    colores = ["#2ecc71" if (lim is None or v <= lim) else "#e74c3c" for v in valores]
+    ax.bar(nombres, valores, color=colores)
+    ax.set_title(f"Concentración promedio de {cont} por estación – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Concentración promedio")
+    ax.tick_params(axis="x", rotation=45, labelsize=9)
+    pie_fig(fig)
+    guardar(fig, f"22_comparacion_estaciones_{cont}_{tag}")
+
+# G23 — Calidad del aire por día de semana (barras apiladas) - por zona
+def g23_calidad_dia_semana(df_ias_d, nombre_zona, periodo, tag):
+    if "Calidad del aire" not in df_ias_d.columns:
+        return
+    df_dia = df_ias_d.copy()
+    df_dia["Día semana"] = df_dia.index.dayofweek
+    mapa_dias = {0: "Lun", 1: "Mar", 2: "Mié", 3: "Jue", 4: "Vie", 5: "Sáb", 6: "Dom"}
+    df_dia["Día"] = df_dia["Día semana"].map(mapa_dias)
+    calidad_por_dia = df_dia.groupby("Día")["Calidad del aire"].value_counts().unstack(fill_value=0)
+    # Reordenar columnas según CATEGORIAS
+    calidad_por_dia = calidad_por_dia.reindex(columns=CATEGORIAS, fill_value=0)
+    fig, ax = plt.subplots(figsize=(12, 6))
+    calidad_por_dia.plot(kind="bar", ax=ax, color=[COLORES_CAT.get(c, "#ccc") for c in CATEGORIAS], width=0.8)
+    ax.set_title(f"Calidad del aire por día de la semana – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.set_ylabel("Número de días")
+    ax.legend(title="Categoría", bbox_to_anchor=(1.05, 1))
+    ax.set_xlabel("")
+    pie_fig(fig)
+    guardar(fig, f"23_calidad_dia_semana_{tag}")
+
+# G24 — Diagrama de dispersión O3 vs NO2 - por zona (promedio de la zona)
+def g24_dispersion_o3_no2(df_ias_d, ests, nombre_zona, periodo, tag):
+    cols_o3 = _buscar_cols_cantidad(df_ias_d, "O3", ests)
+    cols_no2 = _buscar_cols_cantidad(df_ias_d, "NO2", ests)
+    if not cols_o3 or not cols_no2:
+        return
+    df_comb = pd.DataFrame({
+        "O3": df_ias_d[[c for c, _ in cols_o3]].mean(axis=1, skipna=True),
+        "NO2": df_ias_d[[c for c, _ in cols_no2]].mean(axis=1, skipna=True)
+    }).dropna()
+    if df_comb.empty:
+        return
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.scatter(df_comb["NO2"], df_comb["O3"], alpha=0.4, color="teal", s=15)
+    ax.set_xlabel("NO₂ (ppm)")
+    ax.set_ylabel("O₃ (ppm)")
+    ax.set_title(f"Relación O₃ vs NO₂ – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.grid(alpha=0.3)
+    pie_fig(fig)
+    guardar(fig, f"24_dispersion_o3_no2_{tag}")
+
+# G25 — Calendario de excedencias (mosaico) - por contaminante y zona
+def g25_calendario_excedencias(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag):
+    if cont not in LIMITES:
+        return
+    cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
+    if not cols:
+        return
+    serie_prom = df_ias_d[[c for c, _ in cols]].mean(axis=1, skipna=True)
+    lim, _, _ = LIMITES[cont]
+    excede = (serie_prom > lim).astype(int)
+    fecha_min = excede.index.min()
+    fecha_max = excede.index.max()
+    fecha_min = fecha_min - pd.Timedelta(days=fecha_min.weekday())
+    fecha_max = fecha_max + pd.Timedelta(days=6 - fecha_max.weekday())
+    rango = pd.date_range(fecha_min, fecha_max, freq="D")
+    semanas = len(rango) // 7
+    matriz = np.full((semanas, 7), np.nan)
+    for i, fecha in enumerate(rango):
+        semana = i // 7
+        dia = i % 7
+        if fecha in excede.index:
+            matriz[semana, dia] = excede.loc[fecha]
+    fig, ax = plt.subplots(figsize=(12, max(4, semanas*0.3)))
+    cmap = ListedColormap(["#d4e6f1", "#e74c3c"])
+    ax.imshow(matriz, cmap=cmap, aspect="auto", vmin=0, vmax=1)
+    # Etiquetas de día
+    for semana in range(semanas):
+        for dia in range(7):
+            idx = semana*7 + dia
+            if idx < len(rango):
+                fecha = rango[idx]
+                ax.text(dia, semana, fecha.day, ha="center", va="center", fontsize=7)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title(f"Excedencias ({cont}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}\n(Valor > {lim} {UNIDADES[cont]} – en rojo)", fontsize=10)
+    pie_fig(fig)
+    guardar(fig, f"25_calendario_excedencias_{cont}_{tag}") 
 # ============================================================================
 # HELPERS — buscar columnas independiente del formato
 # ============================================================================
@@ -842,9 +1084,10 @@ def generar_todas():
 
     # ── Gráficas globales (una sola vez) ─────────────────────────────────────
     print("\n[GLOBAL]")
-    g6_calidad_global_mensual(df_ias_d, periodo, anio); total += 1
+    g6_calidad_global_mensual(df_ias_d, periodo, anio)
+    total += 1
 
-    # ── Por zona y contaminante ───────────────────────────────────────────────
+    # ── Por zona ────────────────────────────────────────────────────────────
     for tag, (ests_zona, nombre_zona) in ZONAS.items():
         ests_ok = [e for e in ests_zona if e in estaciones]
         if not ests_ok:
@@ -854,45 +1097,61 @@ def generar_todas():
         print(f"Zona: {nombre_zona}")
         print(f"{'─'*60}")
 
-        # Resúmenes por grupo (partículas y gases separados)
-        for grupo, conts_grupo in [("Partículas", [c for c in contaminantes if c in PARTICULAS]),
-                                    ("Gases",      [c for c in contaminantes if c in GASES])]:
+        # 1) Resúmenes de calidad del aire por grupo (partículas y gases)
+        for grupo, conts_grupo in [("particulas", [c for c in contaminantes if c in PARTICULAS]),
+                                    ("gases", [c for c in contaminantes if c in GASES])]:
             if conts_grupo:
                 g5_resumen_zona(df_ias_d, conts_grupo, ests_ok,
                                 nombre_zona, periodo, tag, grupo)
                 total += 1
 
+        # 2) Gráficas por contaminante
         for cont in contaminantes:
             if cont not in LIMITES:
                 continue
             print(f"\n  [{cont}]")
 
+            # ICA horario y diario
             g1_ica_horario(df_ica, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
             total += 1
-
             g2_ica_max_diario(df_ica, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
             total += 1
 
+            # Concentraciones diarias
             g3_concentracion_diaria(df_ias_d, cont, ests_ok, nombre_zona,
                                     periodo, f"{tag}_{cont}", fmt_d)
             total += 1
 
+            # Días por categoría por estación
             g4_dias_categoria_estacion(df_ias_d, cont, ests_ok, nombre_zona,
                                        periodo, f"{tag}_{cont}")
             total += 1
 
+            # Mosaico días fuera de norma (categoría)
             g7_mosaico_fuera_norma(df_ias_d, cont, ests_ok, nombre_zona,
                                    periodo, anio, f"{tag}_{cont}")
             total += 1
 
+            # Promedio del periodo por estación
             g8_promedios_periodo(df_ias_d, cont, ests_ok, nombre_zona,
                                  periodo, f"{tag}_{cont}")
             total += 1
 
-        # Después del for cont in contaminantes ...
-        # (todavía dentro del for tag, (ests_zona, nombre_zona))
+            # Gráficas adicionales por contaminante (G14, G15, G16?, G17, G19, G22, G25)
+            g14_evolucion_ica_linea(df_ica, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
+            total += 1
+            g15_boxplot_contaminante(df_ias_d, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
+            total += 1
+            g17_evolucion_mensual(df_ias_d, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
+            total += 1
+            g19_dias_fuera_norma_estacion(df_ias_d, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
+            total += 1
+            g22_comparacion_estaciones(df_ias_d, cont, ests_ok, nombre_zona, periodo, f"{tag}_{cont}")
+            total += 1
+            g25_calendario_excedencias(df_ias_d, cont, ests_ok, nombre_zona, periodo, anio, f"{tag}_{cont}")
+            total += 1
 
-        # Gráficas multi‑contaminante separadas por grupo (partículas / gases)
+        # 3) Gráficas multi‑contaminante (separadas por partículas y gases)
         particulas = [c for c in contaminantes if c in PARTICULAS]
         gases = [c for c in contaminantes if c in GASES]
 
@@ -918,10 +1177,21 @@ def generar_todas():
             g13_perfil_horario(df_ias_h, gases, ests_ok, nombre_zona, periodo, tag, "gases")
             total += 1
 
+        # 4) Gráficas globales de la zona (independientes del contaminante)
+        g16_comparativa_promedios_zona(df_ias_d, cont, ZONAS, nombre_zona, periodo, tag)
+        total += 1
+        g18_dias_fuera_norma(df_ias_d, contaminantes, ests_ok, nombre_zona, periodo, tag)
+        total += 1
+        g21_porcentaje_categorias(df_ias_d, nombre_zona, periodo, tag)
+        total += 1
+        g23_calidad_dia_semana(df_ias_d, nombre_zona, periodo, tag)
+        total += 1
+        g24_dispersion_o3_no2(df_ias_d, ests_ok, nombre_zona, periodo, tag)
+        total += 1
+
     print(f"\n{'='*60}")
     print(f"✓  {total} gráficas guardadas en '{DIR_SALIDA}/'")
     print(f"{'='*60}")
-
 
 if __name__ == "__main__":
     generar_todas()
