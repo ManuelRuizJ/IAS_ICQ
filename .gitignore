@@ -11,3 +11,4 @@ descargas_*/
 .vscode/
 build/
 
+.ruff*
