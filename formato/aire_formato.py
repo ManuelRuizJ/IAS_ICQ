@@ -19,13 +19,8 @@ with open("config.json", "r", encoding="utf-8") as _f:
 
 COLORES_NOM: dict = _cfg["NOM"]["colores"]
 
-<<<<<<< HEAD
-# Patrón para detectar contaminante dentro del nombre de columna CANTIDAD_
-_PAT_CANT = re.compile(r"^CANTIDAD_[^_]+_([^_]+)_")
-=======
 # en formato/aire_formato.py
 _PAT_CANT = re.compile(r'^CANTIDAD_[^_]+_([^_]+)_')  # grupo1: contaminante
->>>>>>> main
 
 
 def aplicar_formato_aire(ws) -> None:
@@ -38,7 +33,7 @@ def aplicar_formato_aire(ws) -> None:
         if isinstance(nombre, str):
             if (
                 nombre.startswith("AIRE_") and "CANTIDAD" not in nombre
-            ) or nombre == "Calidad del aire":
+            ) or nombre in ("Calidad del aire", "Calidad del aire zona"):
                 columnas_cat.append(col[0].column)
 
     # Alineación global

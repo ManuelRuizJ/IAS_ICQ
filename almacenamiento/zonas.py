@@ -35,20 +35,23 @@ import pandas as pd
 from procesadores.nom import peor_categoria
 
 
-# Patrones de columna (mismos que en exportador.py)
-_PAT_AIRE = re.compile(r"^AIRE_([^_]+)_([^_]+)_(.+)$")
+# Patrones de columna (adaptados a la nueva nomenclatura)
+# AIRE_<contaminante>_<estacion>
+_PAT_AIRE = re.compile(r"^AIRE_([^_]+)_(.+)$")
+# CANTIDAD_<unidad>_<contaminante>_<estacion>
 _PAT_CANT = re.compile(r"^CANTIDAD_([^_]+)_([^_]+)_(.+)$")
+# ICA_<contaminante>_<estacion>
 _PAT_ICA = re.compile(r"^ICA_([^_]+)_(.+)$")
 
 
 def _estacion_de_columna(col: str) -> str | None:
-    """Extrae el nombre de estación de una columna, sea ICA, AIRE o CANTIDAD."""
+    """Extrae el nombre de estación de una columna."""
     for pat in (_PAT_ICA, _PAT_AIRE, _PAT_CANT):
         m = pat.match(col)
         if m:
-            return m.group(m.lastindex)  # último grupo capturado = estación
+            # El último grupo capturado es la estación
+            return m.group(m.lastindex)
     return None
-
 
 def construir_hojas_zonas(
     df_general: pd.DataFrame,
@@ -88,6 +91,7 @@ def construir_hojas_zonas(
 
         # Agregar columna de calidad de zona (solo AIRE/DIARIO, no ICA)
         if tipo in ("AIRE", "DIARIO") and orden_cat:
+            # Identificar columnas de categoría (empiezan con "AIRE_")
             cols_cat = [c for c in cols_zona if c.startswith("AIRE_")]
             if cols_cat:
                 df_zona["Calidad del aire zona"] = peor_categoria(
@@ -96,6 +100,6 @@ def construir_hojas_zonas(
                     umbral=suficiencia,
                 )
 
-        resultado[nombre_zona[:31]] = df_zona  # límite Excel 31 chars
+        resultado[nombre_zona[:31]] = df_zona
 
     return resultado
