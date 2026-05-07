@@ -618,6 +618,8 @@ def g7_mosaico_fuera_norma(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag
 # G8 — PROMEDIO DEL PERIODO POR ESTACIÓN (barras horizontales)
 # ============================================================================
 
+
+
 def g8_promedios_periodo(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     cols = [(c, e) for c, e in _buscar_cols_cantidad(df_ias_d, cont, ests)]
     if not cols: return
@@ -656,7 +658,142 @@ def g8_promedios_periodo(df_ias_d, cont, ests, nombre_zona, periodo, tag):
 
 
 
+# g9 — Dispersión PM10 vs PM2.5 (diario) - CORREGIDA
+def g9_pm10_vs_pm25(df_ias_d, ests, nombre_zona, periodo, tag):
+    # Buscar columnas de cantidad para PM10 y PM2.5 usando la función auxiliar
+    cols_pm10 = _buscar_cols_cantidad(df_ias_d, "PM10", ests)
+    cols_pm25 = _buscar_cols_cantidad(df_ias_d, "PM2.5", ests)
+    if not cols_pm10 or not cols_pm25:
+        return
+    # Tomar la primera columna de cada contaminante (promediar entre estaciones)
+    col_pm10 = cols_pm10[0][0]
+    col_pm25 = cols_pm25[0][0]
+    df_pair = df_ias_d[[col_pm10, col_pm25]].dropna()
+    if df_pair.empty:
+        return
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.scatter(df_pair[col_pm10], df_pair[col_pm25], alpha=0.5, s=20, c="steelblue")
+    ax.set_xlabel("PM10 (µg/m³)")
+    ax.set_ylabel("PM2.5 (µg/m³)")
+    max_val = max(df_pair[col_pm10].max(), df_pair[col_pm25].max()) * 1.1
+    ax.set_xlim(0, max_val)
+    ax.set_ylim(0, max_val)
+    x_line = np.linspace(0, max_val, 100)
+    ax.plot(x_line, 0.5 * x_line, "r--", label="PM2.5 = 0.5 × PM10", alpha=0.7)
+    ax.set_title(f"Relación PM10 vs PM2.5 – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.legend()
+    pie_fig(fig)
+    guardar(fig, f"09_pm10_vs_pm25_{tag}")
 
+
+# g10 — Comparativa de promedios por estación (separado: partículas / gases)
+def g10_comparativa_contaminantes(df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo):
+    """
+    grupo = "particulas" o "gases"
+    """
+    data = {est: {} for est in ests}
+    for est in ests:
+        for cont in cont_list:
+            cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
+            if cols:
+                data[est][cont] = df_ias_d[cols[0][0]].mean()
+    df_plot = pd.DataFrame(data).T.dropna(how="all")
+    if df_plot.empty:
+        return
+    conts_present = [c for c in cont_list if c in df_plot.columns]
+    if not conts_present:
+        return
+    fig, ax = plt.subplots(figsize=(12, max(4, len(df_plot)*0.6+2)))
+    x = np.arange(len(df_plot))
+    width = 0.8 / len(conts_present)
+    for i, cont in enumerate(conts_present):
+        vals = df_plot[cont].fillna(0)
+        bars = ax.bar(x + i*width, vals, width, label=cont, alpha=0.8)
+        for bar, v in zip(bars, vals):
+            if v > 0:
+                fmt = f"{v:.1f}" if grupo == "particulas" else f"{v:.3f}"
+                ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.5,
+                        fmt, ha="center", fontsize=7)
+    ax.set_xticks(x + width*(len(conts_present)-1)/2)
+    ax.set_xticklabels([nombre(e) for e in df_plot.index], rotation=45, ha="right")
+    unidad = "µg/m³" if grupo == "particulas" else "ppm"
+    ax.set_ylabel(f"Concentración promedio ({unidad})", fontsize=9)
+    ax.set_title(f"Comparativa de contaminantes ({grupo}) – {nombre_zona}\nPeriodo completo")
+    ax.legend()
+    pie_fig(fig)
+    guardar(fig, f"10_comparativa_{grupo}_{tag}")
+
+# g11 — Series diarias comparativas (separado: partículas / gases)
+def g11_series_comparativas(df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo):
+    df_zone = pd.DataFrame()
+    for cont in cont_list:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
+        if cols:
+            df_zone[cont] = df_ias_d[[c for c,_ in cols]].mean(axis=1, skipna=True)
+    if df_zone.empty:
+        return
+    fig, ax = plt.subplots(figsize=(14, 5))
+    for cont in df_zone.columns:
+        s = df_zone[cont].dropna()
+        if s.empty: continue
+        ax.plot(s.index, s, label=cont, lw=1.2, marker=".", ms=2)
+    ax.legend()
+    unidad = "µg/m³" if grupo == "particulas" else "ppm"
+    ax.set_ylabel(f"Concentración ({unidad})")
+    ax.set_title(f"Evolución diaria de contaminantes ({grupo}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.grid(True, alpha=0.3)
+    fig.autofmt_xdate()
+    pie_fig(fig)
+    guardar(fig, f"11_series_{grupo}_{tag}")
+
+# g12 — Mapa de calor de correlaciones (separado)
+def g12_correlacion_contaminantes(df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo):
+    df_corr = pd.DataFrame()
+    for cont in cont_list:
+        cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
+        if cols:
+            df_corr[cont] = df_ias_d[[c for c,_ in cols]].mean(axis=1, skipna=True)
+    if df_corr.shape[1] < 2:
+        return
+    corr = df_corr.corr()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(corr.values, cmap="coolwarm", vmin=-1, vmax=1)
+    ax.set_xticks(range(len(corr.columns)))
+    ax.set_xticklabels(corr.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(corr.columns)))
+    ax.set_yticklabels(corr.columns)
+    for i in range(len(corr.columns)):
+        for j in range(len(corr.columns)):
+            ax.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center",
+                    color="white" if abs(corr.iloc[i, j])>0.6 else "black", fontsize=8)
+    plt.colorbar(im, ax=ax, label="Coeficiente de correlación")
+    ax.set_title(f"Correlación entre contaminantes ({grupo}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    pie_fig(fig)
+    guardar(fig, f"12_correlacion_{grupo}_{tag}")
+
+# g13 — Perfil horario (separado)
+def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, grupo):
+    df_hour = pd.DataFrame()
+    for cont in cont_list:
+        cols = _buscar_cols_cantidad(df_ias_h, cont, ests)
+        if cols:
+            df_hour[cont] = df_ias_h[[c for c,_ in cols]].mean(axis=1, skipna=True)
+    if df_hour.empty:
+        return
+    df_hour["hora"] = df_hour.index.hour
+    perfil = df_hour.groupby("hora").mean()
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for cont in perfil.columns:
+        ax.plot(perfil.index, perfil[cont], label=cont, marker="o", lw=1.5)
+    ax.set_xlabel("Hora del día")
+    unidad = "µg/m³" if grupo == "particulas" else "ppm"
+    ax.set_ylabel(f"Concentración promedio ({unidad})")
+    ax.set_title(f"Perfil horario de contaminantes ({grupo}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    pie_fig(fig)
+    guardar(fig, f"13_perfil_horario_{grupo}_{tag}")
+    
 # ============================================================================
 # HELPERS — buscar columnas independiente del formato
 # ============================================================================
@@ -750,6 +887,35 @@ def generar_todas():
 
             g8_promedios_periodo(df_ias_d, cont, ests_ok, nombre_zona,
                                  periodo, f"{tag}_{cont}")
+            total += 1
+
+        # Después del for cont in contaminantes ...
+        # (todavía dentro del for tag, (ests_zona, nombre_zona))
+
+        # Gráficas multi‑contaminante separadas por grupo (partículas / gases)
+        particulas = [c for c in contaminantes if c in PARTICULAS]
+        gases = [c for c in contaminantes if c in GASES]
+
+        if len(particulas) >= 2:
+            g9_pm10_vs_pm25(df_ias_d, ests_ok, nombre_zona, periodo, tag)
+            total += 1
+            g10_comparativa_contaminantes(df_ias_d, particulas, ests_ok, nombre_zona, periodo, tag, "particulas")
+            total += 1
+            g11_series_comparativas(df_ias_d, particulas, ests_ok, nombre_zona, periodo, tag, "particulas")
+            total += 1
+            g12_correlacion_contaminantes(df_ias_d, particulas, ests_ok, nombre_zona, periodo, tag, "particulas")
+            total += 1
+            g13_perfil_horario(df_ias_h, particulas, ests_ok, nombre_zona, periodo, tag, "particulas")
+            total += 1
+
+        if len(gases) >= 2:
+            g10_comparativa_contaminantes(df_ias_d, gases, ests_ok, nombre_zona, periodo, tag, "gases")
+            total += 1
+            g11_series_comparativas(df_ias_d, gases, ests_ok, nombre_zona, periodo, tag, "gases")
+            total += 1
+            g12_correlacion_contaminantes(df_ias_d, gases, ests_ok, nombre_zona, periodo, tag, "gases")
+            total += 1
+            g13_perfil_horario(df_ias_h, gases, ests_ok, nombre_zona, periodo, tag, "gases")
             total += 1
 
     print(f"\n{'='*60}")
