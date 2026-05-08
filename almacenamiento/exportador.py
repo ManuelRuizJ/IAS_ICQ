@@ -52,7 +52,8 @@ def ordenar_columnas_aire(df: pd.DataFrame) -> list:
         col_cat = f"AIRE_{cont}_{est}"
         # Buscar la columna de cantidad correspondiente (cualquiera que termine con _{cont}_{est})
         col_cant_candidates = [
-            c for c in df.columns
+            c
+            for c in df.columns
             if c.endswith(f"_{cont}_{est}") and c.startswith("CANTIDAD_")
         ]
         col_cant = col_cant_candidates[0] if col_cant_candidates else None
@@ -74,10 +75,7 @@ def extraer_estaciones_ica(df: pd.DataFrame) -> dict:
             estaciones.add(m.group(2))
     resultado = {}
     for est in sorted(estaciones):
-        cols = [
-            c for c in df.columns
-            if c.endswith(f"_{est}") and c.startswith("ICA_")
-        ]
+        cols = [c for c in df.columns if c.endswith(f"_{est}") and c.startswith("ICA_")]
         resultado[est] = df[cols].copy()
     return resultado
 
@@ -101,11 +99,13 @@ def extraer_estaciones_aire(
     resultado = {}
     for est in sorted(estaciones):
         cols_cat = [
-            c for c in df.columns
+            c
+            for c in df.columns
             if _PAT_AIRE.match(c) and _PAT_AIRE.match(c).group(2) == est
         ]
         cols_cant = [
-            c for c in df.columns
+            c
+            for c in df.columns
             if _PAT_CANT.match(c) and _PAT_CANT.match(c).group(3) == est
         ]
         df_est = df[cols_cat + cols_cant].copy()
@@ -123,7 +123,8 @@ def extraer_estaciones_aire(
         for cont, est2 in sorted(pares, key=lambda x: x[0]):
             col_cat = f"AIRE_{cont}_{est2}"
             col_cant = [
-                c for c in df_est.columns
+                c
+                for c in df_est.columns
                 if c.endswith(f"_{cont}_{est2}") and c.startswith("CANTIDAD_")
             ]
             col_cant = col_cant[0] if col_cant else None

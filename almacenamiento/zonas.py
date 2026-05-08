@@ -53,6 +53,7 @@ def _estacion_de_columna(col: str) -> str | None:
             return m.group(m.lastindex)
     return None
 
+
 def construir_hojas_zonas(
     df_general: pd.DataFrame,
     zonas: dict,

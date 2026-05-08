@@ -21,7 +21,7 @@ for row in range(4, ws.max_row + 1):
             dt = dt.replace(year=nuevo_anio)
             # Volver a escribir en el mismo formato
             celda.value = dt.strftime("%d/%m/%Y %H:%M")
-        except:
+        except ValueError:
             # Si la celda no es una fecha válida, la dejamos igual
             pass
 
