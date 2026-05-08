@@ -42,11 +42,11 @@ def descartar_cero_por_redondeo(valor, decimales):
 # ── Unidades canónicas por clave ─────────────────────────────────────────────
 # Se usa para construir el prefijo de unidad en los nombres de columna.
 UNIDAD_DISPLAY = {
-    "O3_ppb":      "ppm",
-    "NO2_ppb":     "ppm",
-    "SO2_ppb":     "ppm",
-    "CO_ppm":      "ppm",
-    "PM10_ug/m3":  "ug/m3",
+    "O3_ppb": "ppm",
+    "NO2_ppb": "ppm",
+    "SO2_ppb": "ppm",
+    "CO_ppm": "ppm",
+    "PM10_ug/m3": "ug/m3",
     "PM2.5_ug/m3": "ug/m3",
 }
 

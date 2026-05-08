@@ -20,7 +20,7 @@ with open("config.json", "r", encoding="utf-8") as _f:
 COLORES_NOM: dict = _cfg["NOM"]["colores"]
 
 # en formato/aire_formato.py
-_PAT_CANT = re.compile(r'^CANTIDAD_[^_]+_([^_]+)_')  # grupo1: contaminante
+_PAT_CANT = re.compile(r"^CANTIDAD_[^_]+_([^_]+)_")  # grupo1: contaminante
 
 
 def aplicar_formato_aire(ws) -> None:
@@ -31,9 +31,10 @@ def aplicar_formato_aire(ws) -> None:
     for col in ws.iter_cols(min_row=1, max_row=1):
         nombre = col[0].value
         if isinstance(nombre, str):
-            if (
-                nombre.startswith("AIRE_") and "CANTIDAD" not in nombre
-            ) or nombre in ("Calidad del aire", "Calidad del aire zona"):
+            if (nombre.startswith("AIRE_") and "CANTIDAD" not in nombre) or nombre in (
+                "Calidad del aire",
+                "Calidad del aire zona",
+            ):
                 columnas_cat.append(col[0].column)
 
     # Alineación global
