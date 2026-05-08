@@ -247,8 +247,8 @@ def g1_ica_horario(df_ica, cont, ests, nombre_zona, periodo, tag):
 
     for col in cols:
         est = "_".join(col.split("_")[2:])
-        s = df_ica[col].dropna()
-        if s.empty: continue
+        s = df_ica[col]  # <-- SIN dropna()
+        if s.isnull().all(): continue
         ax.plot(s.index, s, label=nombre(est),
                 color=COLOR_EST.get(est, "#444"), lw=0.9, alpha=0.85)
 
@@ -272,6 +272,7 @@ def g1_ica_horario(df_ica, cont, ests, nombre_zona, periodo, tag):
     fig.autofmt_xdate(); pie_fig(fig)
     guardar(fig, f"01_ica_horario_{cont}_{tag}")
 
+
 # ============================================================================
 # G2 — MÁXIMO ICA DIARIO (sin promediar entre estaciones)
 # ============================================================================
@@ -285,8 +286,8 @@ def g2_ica_max_diario(df_ica, cont, ests, nombre_zona, periodo, tag):
 
     for col in cols:
         est = "_".join(col.split("_")[2:])
-        s = df_ica[col].resample("D").max().dropna()
-        if s.empty: continue
+        s = df_ica[col].resample("D").max()
+        if s.isnull().all(): continue
         ax.plot(s.index, s, label=nombre(est),
                 color=COLOR_EST.get(est, "#444"), lw=1.2,
                 marker="o", ms=2.5, alpha=0.85)
@@ -305,6 +306,7 @@ def g2_ica_max_diario(df_ica, cont, ests, nombre_zona, periodo, tag):
     fig.autofmt_xdate(); pie_fig(fig)
     guardar(fig, f"02_ica_max_diario_{cont}_{tag}")
 
+
 # ============================================================================
 # G3 — CONCENTRACIÓN DIARIA CON LÍMITE NOM
 # ============================================================================
@@ -314,12 +316,10 @@ def g3_concentracion_diaria(df_ias_d, cont, ests, nombre_zona,
     prefix = "CANTIDAD"
     cols = []
     for e in ests:
-        # Soporta ambos formatos
         c1 = f"{prefix}_{cont}_{e}"
         if c1 in df_ias_d.columns:
             cols.append((c1, e))
         else:
-            # Buscar con unidad embebida: CANTIDAD_ppb_O3_EST
             for col in df_ias_d.columns:
                 if col.startswith(f"{prefix}_") and col.endswith(f"_{e}"):
                     cont_col = extractar_cont(col, prefix)
@@ -333,8 +333,8 @@ def g3_concentracion_diaria(df_ias_d, cont, ests, nombre_zona,
 
     fig, ax = plt.subplots(figsize=(14, 5))
     for col, est in cols:
-        s = df_ias_d[col].dropna()
-        if s.empty: continue
+        s = df_ias_d[col]  # <-- SIN dropna()
+        if s.isnull().all(): continue
         ax.plot(s.index, s, label=nombre(est),
                 color=COLOR_EST.get(est, "#444"), lw=1.2,
                 marker="o", ms=2.5, alpha=0.85)
@@ -351,6 +351,7 @@ def g3_concentracion_diaria(df_ias_d, cont, ests, nombre_zona,
     ax.legend(loc="upper right", framealpha=0.88)
     fig.autofmt_xdate(); pie_fig(fig)
     guardar(fig, f"03_concentracion_diaria_{cont}_{tag}")
+
 
 def extractar_cont(col, prefix):
     """Extrae contaminante de columna CANTIDAD_[unidad_]CONT_EST."""
@@ -723,6 +724,7 @@ def g10_comparativa_contaminantes(df_ias_d, cont_list, ests, nombre_zona, period
     pie_fig(fig)
     guardar(fig, f"10_comparativa_{grupo}_{tag}")
 
+
 # g11 — Series diarias comparativas (separado: partículas / gases)
 def g11_series_comparativas(df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo):
     df_zone = pd.DataFrame()
@@ -734,8 +736,8 @@ def g11_series_comparativas(df_ias_d, cont_list, ests, nombre_zona, periodo, tag
         return
     fig, ax = plt.subplots(figsize=(14, 5))
     for cont in df_zone.columns:
-        s = df_zone[cont].dropna()
-        if s.empty: continue
+        s = df_zone[cont]  # <-- SIN dropna()
+        if s.isnull().all(): continue
         ax.plot(s.index, s, label=cont, lw=1.2, marker=".", ms=2)
     ax.legend()
     unidad = "µg/m³" if grupo == "particulas" else "ppm"
@@ -745,6 +747,7 @@ def g11_series_comparativas(df_ias_d, cont_list, ests, nombre_zona, periodo, tag
     fig.autofmt_xdate()
     pie_fig(fig)
     guardar(fig, f"11_series_{grupo}_{tag}")
+
 
 # g12 — Mapa de calor de correlaciones (separado)
 def g12_correlacion_contaminantes(df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo):
@@ -770,6 +773,7 @@ def g12_correlacion_contaminantes(df_ias_d, cont_list, ests, nombre_zona, period
     ax.set_title(f"Correlación entre contaminantes ({grupo}) – {nombre_zona}\nPeriodo: {periodo[0]} – {periodo[1]}")
     pie_fig(fig)
     guardar(fig, f"12_correlacion_{grupo}_{tag}")
+
 
 # g13 — Perfil horario (separado)
 def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, grupo):
@@ -806,9 +810,8 @@ def g14_evolucion_ica_linea(df_ica, cont, ests, nombre_zona, periodo, tag):
     fig, ax = plt.subplots(figsize=(14, 5))
     for col in cols:
         est = "_".join(col.split("_")[2:])
-        s = df_ica[col].dropna()
-        if s.empty:
-            continue
+        s = df_ica[col]  # <-- SIN dropna()
+        if s.isnull().all(): continue
         ax.plot(s.index, s, label=nombre(est), lw=0.9, alpha=0.85)
     ax.axhline(100, color="red", ls="--", lw=1.2, label="ICA = 100")
     ax.set_title(f"Evolución del ICA – {cont}\n{nombre_zona}  |  Periodo: {periodo[0]} – {periodo[1]}")
@@ -1195,3 +1198,6 @@ def generar_todas():
 
 if __name__ == "__main__":
     generar_todas()
+
+    # TODO: corregir lo de las lineas que saltan
+    # TODO: Hacer un nuevo script para camibar a otro año
