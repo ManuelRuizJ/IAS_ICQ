@@ -1199,5 +1199,4 @@ def generar_todas():
 if __name__ == "__main__":
     generar_todas()
 
-    # TODO: corregir lo de las lineas que saltan
     # TODO: Hacer un nuevo script para camibar a otro año
