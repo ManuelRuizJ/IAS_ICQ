@@ -12,3 +12,5 @@ descargas_*/
 build/
 
 .ruff*
+
+idea.py
