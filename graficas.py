@@ -1,7 +1,7 @@
 """
 graficas.py
 -----------
-Genera gráficas de calidad del aire para reportes oficiales REMA-SMADSOT.
+Genera graficas de calidad del aire para reportes oficiales REMA-SMADSOT.
 
 Archivos de entrada (carpeta datos/)
 --------------------------------------
@@ -14,7 +14,7 @@ Uso
 ---
   python graficas.py
 
-Salida: carpeta  graficas/  con 115+ imágenes PNG a 150 dpi.
+Salida: carpeta  graficas/  con 115+ imagenes PNG a 150 dpi.
 """
 
 import warnings
@@ -28,23 +28,27 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from matplotlib.ticker import MaxNLocator
 
+
+# Usar backend Agg para generar imagenes sin pantalla
 matplotlib.use("Agg")
 warnings.filterwarnings("ignore")
+
 
 # ============================================================================
 # CONFIGURACIÓN — RUTAS Y CONSTANTES
 # ============================================================================
-
 DIR_SALIDA = "graficas"
 os.makedirs(DIR_SALIDA, exist_ok=True)
 
-# ── Archivos de entrada ──────────────────────────────────────────────────────
+
+# Archivos de entrada (deben existir en la carpeta datos/)
 ARCHIVO_ICA_HORARIO = "datos/datos_calidad_aire_ICA.xlsx"
 ARCHIVO_IAS_HORARIO = "datos/datos_calidad_aire_AIRE_Y_SALUD.xlsx"
 ARCHIVO_IAS_DIARIO = "datos/datos_calidad_aire_DIARIO_IAS.xlsx"
 ARCHIVO_ICA_DIARIO = "datos/datos_calidad_aire_DIARIO_ICA.xlsx"
 
-# ── Zonas geográficas ────────────────────────────────────────────────────────
+
+# Zonas geograficas definidas en config.json (replicadas aqui para graficas)
 ZMVP = ["AGUA SANTA", "BINE", "NINFAS", "UTP", "VELODROMO"]
 MUNICIPIOS = ["ATLIXCO", "TEHUACAN", "TEXMELUCAN"]
 TODAS = ZMVP + MUNICIPIOS
@@ -54,7 +58,8 @@ ZONAS = {
     "General": (TODAS, "Todas las estaciones REMA"),
 }
 
-# ── Categorías IAS ───────────────────────────────────────────────────────────
+
+# Categorias IAS y sus colores (NOM-172)
 CATEGORIAS = ["Buena", "Aceptable", "Mala", "Muy mala", "Extremadamente mala"]
 COLORES_CAT = {
     "Buena": "#00E400",
@@ -65,7 +70,8 @@ COLORES_CAT = {
     "Sin dato": "#CCCCCC",
 }
 
-# ── Bandas ICA ───────────────────────────────────────────────────────────────
+
+# Bandas ICA con colores y etiquetas (NADF-009)
 BANDAS_ICA = [
     (0, 50, "#9ACA3C", "Buena  (0–50)"),
     (51, 100, "#F7EC0F", "Aceptable  (51–100)"),
@@ -75,7 +81,8 @@ BANDAS_ICA = [
     (301, 500, "#7E0023", "Muy peligrosa  (301–500)"),
 ]
 
-# ── Límites máximos permisibles NOM ─────────────────────────────────────────
+
+# Limites maximos permisibles NOM por contaminante
 LIMITES = {
     "PM10": (60, "µg/m³", "NOM-025-SSA1-2021"),
     "PM2.5": (33, "µg/m³", "NOM-025-SSA1-2021"),
@@ -85,6 +92,8 @@ LIMITES = {
     "SO2": (0.040, "ppm", "NOM-022-SSA1-2019"),
 }
 
+
+# Unidades de medida para mostrar en graficas
 UNIDADES = {
     "PM10": "µg/m³",
     "PM2.5": "µg/m³",
@@ -94,6 +103,8 @@ UNIDADES = {
     "SO2": "ppm",
 }
 
+
+# Tipo de promedio usado para cada contaminante en reporte diario
 TIPO_PROM = {
     "PM10": "Promedio 24 h",
     "PM2.5": "Promedio 24 h",
@@ -106,7 +117,8 @@ TIPO_PROM = {
 PARTICULAS = {"PM10", "PM2.5"}
 GASES = {"O3", "NO2", "CO", "SO2"}
 
-# ── Colores y nombres por estación ───────────────────────────────────────────
+
+# Colores y nombres amigables para cada estacion
 COLOR_EST = {
     "AGUA SANTA": "#1f77b4",
     "BINE": "#ff7f0e",
@@ -128,6 +140,8 @@ NOMBRE_EST = {
     "TEXMELUCAN": "San Martín Texmelucan",
 }
 
+
+# Pie de pagina comun para todas las graficas
 PIE = (
     "Fuente: REMA-SMADSOT  |  Red Estatal de Monitoreo Atmosférico del Estado de Puebla"
 )
@@ -138,6 +152,7 @@ PIE = (
 
 
 def estilo():
+    """Configura el estilo global de matplotlib para todas las graficas."""
     plt.rcParams.update(
         {
             "font.family": "DejaVu Sans",
@@ -157,6 +172,7 @@ def estilo():
 
 
 def guardar(fig, nombre):
+    """Guarda una figura PNG en la carpeta de salida."""
     path = os.path.join(DIR_SALIDA, f"{nombre}.png")
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -164,6 +180,7 @@ def guardar(fig, nombre):
 
 
 def pie_fig(fig):
+    """Anade el pie de pagina a la figura."""
     fig.text(
         0.99,
         0.005,
@@ -177,10 +194,12 @@ def pie_fig(fig):
 
 
 def nombre(est):
+    """Devuelve el nombre amigable de una estacion."""
     return NOMBRE_EST.get(est, est.title())
 
 
 def bandas_fondo(ax, ymax=300):
+    """Dibuja bandas de color de fondo para ICA."""
     for lo, hi, color, _ in BANDAS_ICA:
         if lo > ymax:
             break
@@ -188,6 +207,7 @@ def bandas_fondo(ax, ymax=300):
 
 
 def peor_cat(serie_fila):
+    """Dada una fila con categorias, devuelve la peor (maximo orden)."""
     orden = {c: i for i, c in enumerate(CATEGORIAS)}
     validos = serie_fila.dropna()
     if validos.empty:
@@ -223,12 +243,15 @@ def extraer_cont_est(col, tipo="AIRE", fmt="sin_unidad"):
     return cont.strip(), est.strip()
 
 
+
 # ============================================================================
 # CARGA DE DATOS
 # ============================================================================
-
-
 def cargar_datos():
+    """
+    Lee los archivos Excel de salida y devuelve DataFrames listos para graficar.
+    Detecta automaticamente el formato de columnas (con o sin unidad).
+    """
     print("Cargando datos...")
 
     # ICA horario
@@ -239,14 +262,14 @@ def cargar_datos():
     df_ias_h = pd.read_excel(ARCHIVO_IAS_HORARIO, sheet_name="General", index_col=0)
     df_ias_h.index = pd.to_datetime(df_ias_h.index, errors="coerce")
 
-    # IAS diario
+    # IAS diario (la fecha esta en la primera columna, no como indice)
     df_ias_d = pd.read_excel(ARCHIVO_IAS_DIARIO, sheet_name="General")
     fecha_col = df_ias_d.columns[0]  # primera columna = Fecha
     df_ias_d[fecha_col] = pd.to_datetime(df_ias_d[fecha_col], errors="coerce")
     df_ias_d = df_ias_d.set_index(fecha_col)
     df_ias_d.index.name = "Fecha"
 
-    # ICA diario (opcional)
+    # ICA diario (opcional, puede no existir)
     df_ica_d = None
     if os.path.exists(ARCHIVO_ICA_DIARIO):
         df_ica_d = pd.read_excel(ARCHIVO_ICA_DIARIO, sheet_name="General", index_col=0)
@@ -256,7 +279,7 @@ def cargar_datos():
     fmt_ias_h = detectar_formato_col(df_ias_h.columns, "AIRE")
     fmt_ias_d = detectar_formato_col(df_ias_d.columns, "AIRE")
 
-    # Contaminantes y estaciones disponibles (desde ICA como referencia)
+    # Lista de contaminantes y estaciones disponibles (tomando ICA como referencia)
     contaminantes = sorted(
         {col.split("_")[1] for col in df_ica.columns if col.startswith("ICA_")}
     )
@@ -293,12 +316,12 @@ def cargar_datos():
     )
 
 
-# ============================================================================
-# G1 — ICA HORARIO POR ESTACIÓN (líneas individuales, sin promediar)
-# ============================================================================
 
-
+# ============================================================================
+# G1 — ICA HORARIO POR ESTACIÓN  (lineas individuales, sin promediar)
+# ============================================================================
 def g1_ica_horario(df_ica, cont, ests, nombre_zona, periodo, tag):
+    """Grafica de lineas del ICA horario para un contaminante y lista de estaciones."""
     cols = [f"ICA_{cont}_{e}" for e in ests if f"ICA_{cont}_{e}" in df_ica.columns]
     if not cols:
         return
@@ -356,12 +379,12 @@ def g1_ica_horario(df_ica, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"01_ica_horario_{cont}_{tag}")
 
 
-# ============================================================================
-# G2 — MÁXIMO ICA DIARIO (sin promediar entre estaciones)
-# ============================================================================
 
-
+# ============================================================================
+# G2 — MAXIMO ICA DIARIO (sin promediar entre estaciones)
+# ============================================================================
 def g2_ica_max_diario(df_ica, cont, ests, nombre_zona, periodo, tag):
+    """Maximo ICA diario por estacion (resample diario max)."""
     cols = [f"ICA_{cont}_{e}" for e in ests if f"ICA_{cont}_{e}" in df_ica.columns]
     if not cols:
         return
@@ -409,12 +432,12 @@ def g2_ica_max_diario(df_ica, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"02_ica_max_diario_{cont}_{tag}")
 
 
-# ============================================================================
-# G3 — CONCENTRACIÓN DIARIA CON LÍMITE NOM
-# ============================================================================
 
-
+# ============================================================================
+# G3 — CONCENTRACION DIARIA CON LIMITE NOM
+# ============================================================================
 def g3_concentracion_diaria(df_ias_d, cont, ests, nombre_zona, periodo, tag, fmt):
+    """Concentracion diaria (promedio o maximo segun contaminante) con linea de limite NOM."""
     prefix = "CANTIDAD"
     cols = []
     for e in ests:
@@ -474,9 +497,8 @@ def g3_concentracion_diaria(df_ias_d, cont, ests, nombre_zona, periodo, tag, fmt
 
 
 def extractar_cont(col, prefix):
-    """Extrae contaminante de columna CANTIDAD_[unidad_]CONT_EST."""
+    """Extrae el contaminante de una columna CANTIDAD_[unidad_]CONT_EST."""
     partes = col[len(prefix) + 1 :].split("_")
-    # Puede ser [cont, est...] o [unidad, cont, est...]
     conts_conocidos = {"CO", "NO2", "O3", "PM10", "PM2.5", "SO2"}
     for i, p in enumerate(partes):
         if p in conts_conocidos:
@@ -485,11 +507,10 @@ def extractar_cont(col, prefix):
 
 
 # ============================================================================
-# G4 — DÍAS POR CATEGORÍA IAS POR ESTACIÓN (barras horizontales apiladas)
+# G4 — DIAS POR CATEGORIA IAS POR ESTACION (barras horizontales apiladas)
 # ============================================================================
-
-
 def g4_dias_categoria_estacion(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Barras horizontales apiladas mostrando distribucion de categorias por estacion."""
     cols = _buscar_cols_aire(df_ias_d, cont, ests)
     if not cols:
         return
@@ -544,12 +565,12 @@ def g4_dias_categoria_estacion(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"04_dias_cat_estacion_{cont}_{tag}")
 
 
-# ============================================================================
-# G5 — RESUMEN DÍAS POR CONTAMINANTE Y ZONA (barras verticales apiladas)
-# ============================================================================
 
-
+# ============================================================================
+# G5 — RESUMEN DIAS POR CONTAMINANTE Y ZONA (barras verticales apiladas)
+# ============================================================================
 def g5_resumen_zona(df_ias_d, conts, ests, nombre_zona, periodo, tag, grupo):
+    """Barras apiladas resumiendo dias por categoria para varios contaminantes en una zona."""
     data = {}
     for cont in conts:
         cols = _buscar_cols_aire(df_ias_d, cont, ests)
@@ -610,12 +631,12 @@ def g5_resumen_zona(df_ias_d, conts, ests, nombre_zona, periodo, tag, grupo):
     guardar(fig, f"05_resumen_zona_{tag}_{grupo.lower()}")
 
 
+
 # ============================================================================
 # G6 — CALIDAD GLOBAL DIARIA MENSUAL (columna "Calidad del aire")
 # ============================================================================
-
-
 def g6_calidad_global_mensual(df_ias_d, periodo, anio):
+    """Barras apiladas por mes de la columna 'Calidad del aire' (todas estaciones y contaminantes)."""
     if "Calidad del aire" not in df_ias_d.columns:
         print("  [Omitida G6] columna 'Calidad del aire' no encontrada.")
         return
@@ -682,26 +703,21 @@ def g6_calidad_global_mensual(df_ias_d, periodo, anio):
     guardar(fig, "06_calidad_global_mensual")
 
 
-# ============================================================================
-# G7 — MOSAICO DÍAS FUERA DE NORMA (como Gráfica 2 del Reporte Anual)
-# Esta es la gráfica estrella para el reporte oficial.
-# Filas = semanas del año, columnas = días de la semana,
-# color = peor categoría IAS del día. Una figura por contaminante.
-# ============================================================================
 
-
+# ============================================================================
+# G7 — MOSAICO DIAS FUERA DE NORMA (como Grafica 2 del Reporte Anual)
+# ============================================================================
 def g7_mosaico_fuera_norma(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag):
     """
-    Mosaico de calor estilo calendario (semanas × días semana).
-    Cada celda representa un día del año.
-    Color = categoría IAS (peor entre estaciones de la zona).
-    Réplica de la Gráfica 2 del Reporte Anual 2025 REMA-SMADSOT.
+    Mosaico de calor estilo calendario (semanas x dias semana).
+    Cada celda representa un dia del año. Color = categoria IAS.
+    Replica la Grafica 2 del Reporte Anual 2025 REMA-SMADSOT.
     """
     cols = _buscar_cols_aire(df_ias_d, cont, ests)
     if not cols:
         return
 
-    # Calcular peor categoría del día entre estaciones de la zona
+     # Calcular peor categoria del dia entre estaciones de la zona
     df_cats = pd.DataFrame({e: df_ias_d[c] for c, e in cols})
     serie_peor = df_cats.apply(peor_cat, axis=1).rename("categoria")
 
@@ -821,12 +837,13 @@ def g7_mosaico_fuera_norma(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag
     guardar(fig, f"07_mosaico_fuera_norma_{cont}_{tag}")
 
 
-# ============================================================================
-# G8 — PROMEDIO DEL PERIODO POR ESTACIÓN (barras horizontales)
-# ============================================================================
 
 
+# ============================================================================
+# G8 — PROMEDIO DEL PERIODO POR ESTACION (barras horizontales)
+# ============================================================================
 def g8_promedios_periodo(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Concentracion promedio del periodo para cada estacion (barras horizontales)."""
     cols = [(c, e) for c, e in _buscar_cols_cantidad(df_ias_d, cont, ests)]
     if not cols:
         return
@@ -880,9 +897,12 @@ def g8_promedios_periodo(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"08_promedios_periodo_{cont}_{tag}")
 
 
-# g9 — Dispersión PM10 vs PM2.5 (diario) - CORREGIDA
+
+# ============================================================================
+# G9 — DISPERSION PM10 vs PM2.5 (diario)
+# ============================================================================
 def g9_pm10_vs_pm25(df_ias_d, ests, nombre_zona, periodo, tag):
-    # Buscar columnas de cantidad para PM10 y PM2.5 usando la función auxiliar
+    """Diagrama de dispersion PM10 vs PM2.5 con linea de referencia 0.5."""
     cols_pm10 = _buscar_cols_cantidad(df_ias_d, "PM10", ests)
     cols_pm25 = _buscar_cols_cantidad(df_ias_d, "PM2.5", ests)
     if not cols_pm10 or not cols_pm25:
@@ -910,11 +930,15 @@ def g9_pm10_vs_pm25(df_ias_d, ests, nombre_zona, periodo, tag):
     guardar(fig, f"09_pm10_vs_pm25_{tag}")
 
 
-# g10 — Comparativa de promedios por estación (separado: partículas / gases)
+
+# ============================================================================
+# G10 — COMPARATIVA DE PROMEDIOS POR ESTACION (barras agrupadas)
+# ============================================================================
 def g10_comparativa_contaminantes(
     df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo
 ):
     """
+    Barras agrupadas comparando promedios de varios contaminantes por estacion.
     grupo = "particulas" o "gases"
     """
     data = {est: {} for est in ests}
@@ -957,10 +981,14 @@ def g10_comparativa_contaminantes(
     guardar(fig, f"10_comparativa_{grupo}_{tag}")
 
 
-# g11 — Series diarias comparativas (separado: partículas / gases)
+
+# ============================================================================
+# G11 — SERIES DIARIAS COMPARATIVAS (lineas temporales)
+# ============================================================================
 def g11_series_comparativas(
     df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo
 ):
+    """Evolucion temporal diaria de varios contaminantes (promedio de la zona)."""
     df_zone = pd.DataFrame()
     for cont in cont_list:
         cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
@@ -986,10 +1014,14 @@ def g11_series_comparativas(
     guardar(fig, f"11_series_{grupo}_{tag}")
 
 
-# g12 — Mapa de calor de correlaciones (separado)
+
+# ============================================================================
+# G12 — MAPA DE CALOR DE CORRELACIONES
+# ============================================================================
 def g12_correlacion_contaminantes(
     df_ias_d, cont_list, ests, nombre_zona, periodo, tag, grupo
 ):
+    """Matriz de correlacion entre contaminantes (promedio de la zona)."""
     df_corr = pd.DataFrame()
     for cont in cont_list:
         cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
@@ -1023,8 +1055,12 @@ def g12_correlacion_contaminantes(
     guardar(fig, f"12_correlacion_{grupo}_{tag}")
 
 
-# g13 — Perfil horario (separado)
+
+# ============================================================================
+# G13 — PERFIL HORARIO (promedio por hora del dia)
+# ============================================================================
 def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, grupo):
+    """Concentracion promedio por hora del dia para varios contaminantes."""
     df_hour = pd.DataFrame()
     for cont in cont_list:
         cols = _buscar_cols_cantidad(df_ias_h, cont, ests)
@@ -1049,13 +1085,12 @@ def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, gru
     guardar(fig, f"13_perfil_horario_{grupo}_{tag}")
 
 
-# ============================================================================
-# GRÁFICAS ADICIONALES (G14 - G25)
-# ============================================================================
 
-
-# G14 — Evolución del ICA (línea temporal) - por zona y contaminante
+# ============================================================================
+# G14 — EVOLUCION DEL ICA (linea temporal)
+# ============================================================================
 def g14_evolucion_ica_linea(df_ica, cont, ests, nombre_zona, periodo, tag):
+    """Lineas de ICA horario (repite funcionalidad de G1 pero con nombre diferente)."""
     cols = [f"ICA_{cont}_{e}" for e in ests if f"ICA_{cont}_{e}" in df_ica.columns]
     if not cols:
         return
@@ -1077,8 +1112,12 @@ def g14_evolucion_ica_linea(df_ica, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"14_evolucion_ica_{cont}_{tag}")
 
 
-# G15 — Boxplot de concentraciones por estación
+
+# ============================================================================
+# G15 — BOXPLOT DE CONCENTRACIONES POR ESTACION
+# ============================================================================
 def g15_boxplot_contaminante(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Distribucion de concentraciones diarias por estacion (boxplot sin outliers)."""
     datos = []
     etiquetas = []
     for est in ests:
@@ -1102,10 +1141,14 @@ def g15_boxplot_contaminante(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"15_boxplot_{cont}_{tag}")
 
 
-# G16 — Comparativa de promedios entre zonas (barras) - por contaminante
+
+# ============================================================================
+# G16 — COMPARATIVA DE PROMEDIOS ENTRE ZONAS (barras)
+# ============================================================================
 def g16_comparativa_promedios_zona(
     df_ias_d, cont, zonas_dict, nombre_zona, periodo, tag
 ):
+    """Compara promedios de un contaminante entre las dos zonas."""
     promedios = {}
     for zona, ests in zonas_dict.items():
         valores = []
@@ -1127,8 +1170,12 @@ def g16_comparativa_promedios_zona(
     guardar(fig, f"16_comparativa_promedios_zona_{cont}_{tag}")
 
 
-# G17 — Evolución mensual (barras) - por contaminante y zona
+
+# ============================================================================
+# G17 — EVOLUCION MENSUAL (barras)
+# ============================================================================
 def g17_evolucion_mensual(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Promedio mensual de concentracion (barras)."""
     cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
     if not cols:
         return
@@ -1146,8 +1193,12 @@ def g17_evolucion_mensual(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"17_evolucion_mensual_{cont}_{tag}")
 
 
-# G18 — Días fuera de norma (barras verticales) - por zona
+
+# ============================================================================
+# G18 — DIAS FUERA DE NORMA (barras verticales) - por zona
+# ============================================================================
 def g18_dias_fuera_norma(df_ias_d, conts, ests, nombre_zona, periodo, tag):
+    """Numero de dias con excedencia del limite NOM para cada contaminante en la zona."""
     resultado = {}
     for cont in conts:
         cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
@@ -1172,8 +1223,12 @@ def g18_dias_fuera_norma(df_ias_d, conts, ests, nombre_zona, periodo, tag):
     guardar(fig, f"18_dias_fuera_norma_{tag}")
 
 
-# G19 — Días fuera de norma por estación (barras horizontales) - por contaminante
+
+# ============================================================================
+# G19 — DIAS FUERA DE NORMA POR ESTACION (barras horizontales)
+# ============================================================================
 def g19_dias_fuera_norma_estacion(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Diagrama de torta con la distribucion de la columna 'Calidad del aire'."""
     lim, _, _ = LIMITES.get(cont, (None, "", ""))
     if lim is None:
         return
@@ -1199,8 +1254,12 @@ def g19_dias_fuera_norma_estacion(df_ias_d, cont, ests, nombre_zona, periodo, ta
     guardar(fig, f"19_excedencias_estacion_{cont}_{tag}")
 
 
-# G21 — Porcentaje de días por categoría IAS (torta) - por zona
+
+# ============================================================================
+# G21 — PORCENTAJE DE DIAS POR CATEGORIA IAS (torta)
+# ============================================================================
 def g21_porcentaje_categorias(df_ias_d, nombre_zona, periodo, tag):
+    """Diagrama de torta con la distribucion de la columna 'Calidad del aire'."""
     if "Calidad del aire" not in df_ias_d.columns:
         return
     conteo = df_ias_d["Calidad del aire"].value_counts()
@@ -1218,8 +1277,12 @@ def g21_porcentaje_categorias(df_ias_d, nombre_zona, periodo, tag):
     guardar(fig, f"21_porcentaje_categorias_{tag}")
 
 
-# G22 — Comparación de estaciones (barras) - por contaminante
+
+# ============================================================================
+# G22 — COMPARACION DE ESTACIONES (barras)
+# ============================================================================
 def g22_comparacion_estaciones(df_ias_d, cont, ests, nombre_zona, periodo, tag):
+    """Concentracion promedio por estacion para un contaminante."""
     promedios = {}
     for est in ests:
         cols = _buscar_cols_cantidad(df_ias_d, cont, [est])
@@ -1242,8 +1305,12 @@ def g22_comparacion_estaciones(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"22_comparacion_estaciones_{cont}_{tag}")
 
 
-# G23 — Calidad del aire por día de semana (barras apiladas) - por zona
+
+# ============================================================================
+# G23 — CALIDAD DEL AIRE POR DIA DE SEMANA (barras apiladas)
+# ============================================================================
 def g23_calidad_dia_semana(df_ias_d, nombre_zona, periodo, tag):
+    """Distribucion de categorias segun el dia de la semana."""
     if "Calidad del aire" not in df_ias_d.columns:
         return
     df_dia = df_ias_d.copy()
@@ -1272,8 +1339,12 @@ def g23_calidad_dia_semana(df_ias_d, nombre_zona, periodo, tag):
     guardar(fig, f"23_calidad_dia_semana_{tag}")
 
 
-# G24 — Diagrama de dispersión O3 vs NO2 - por zona (promedio de la zona)
+
+# ============================================================================
+# G24 — DISPERSION O3 vs NO2
+# ============================================================================
 def g24_dispersion_o3_no2(df_ias_d, ests, nombre_zona, periodo, tag):
+    """Diagrama de dispersion O3 vs NO2 (promedio de la zona)."""
     cols_o3 = _buscar_cols_cantidad(df_ias_d, "O3", ests)
     cols_no2 = _buscar_cols_cantidad(df_ias_d, "NO2", ests)
     if not cols_o3 or not cols_no2:
@@ -1298,8 +1369,12 @@ def g24_dispersion_o3_no2(df_ias_d, ests, nombre_zona, periodo, tag):
     guardar(fig, f"24_dispersion_o3_no2_{tag}")
 
 
-# G25 — Calendario de excedencias (mosaico) - por contaminante y zona
+
+# ============================================================================
+# G25 — CALENDARIO DE EXCEDENCIAS (mosaico)
+# ============================================================================
 def g25_calendario_excedencias(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag):
+    """Mosaico que muestra dias con excedencia del limite NOM (rojo) vs normales."""
     if cont not in LIMITES:
         return
     cols = _buscar_cols_cantidad(df_ias_d, cont, ests)
@@ -1340,11 +1415,10 @@ def g25_calendario_excedencias(df_ias_d, cont, ests, nombre_zona, periodo, anio,
     guardar(fig, f"25_calendario_excedencias_{cont}_{tag}")
 
 
+
 # ============================================================================
 # HELPERS — buscar columnas independiente del formato
 # ============================================================================
-
-
 def _buscar_cols_aire(df, cont, ests):
     """Retorna lista de (columna, estacion) para columnas AIRE_<cont>_<est>."""
     resultado = []
@@ -1381,12 +1455,12 @@ def _buscar_cols_cantidad(df, cont, ests):
     return resultado
 
 
+
 # ============================================================================
 # ORQUESTADOR PRINCIPAL
 # ============================================================================
-
-
 def generar_todas():
+    """Genera todas las graficas llamando a cada funcion."""
     estilo()
     (
         df_ica,
@@ -1403,12 +1477,12 @@ def generar_todas():
 
     total = 0
 
-    # ── Gráficas globales (una sola vez) ─────────────────────────────────────
+    # Gráficas globales (una sola vez)
     print("\n[GLOBAL]")
     g6_calidad_global_mensual(df_ias_d, periodo, anio)
     total += 1
 
-    # ── Por zona ────────────────────────────────────────────────────────────
+    # Por zona
     for tag, (ests_zona, nombre_zona) in ZONAS.items():
         ests_ok = [e for e in ests_zona if e in estaciones]
         if not ests_ok:
@@ -1556,5 +1630,3 @@ def generar_todas():
 
 if __name__ == "__main__":
     generar_todas()
-
-    # TODO: Hacer un nuevo script para camibar a otro año
