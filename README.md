@@ -273,11 +273,6 @@ Generando gráficas...
 
 - **NADF-009-AIRE-2017**
 - **NOM-172-SEMARNAT-2023**
-- **NOM-020**
-- **NOM-021**
-- **NOM-022**
-- **NOM-023**
-- **NOM-025-SSA1**
 
 ---
 
