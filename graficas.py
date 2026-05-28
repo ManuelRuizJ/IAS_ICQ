@@ -243,7 +243,6 @@ def extraer_cont_est(col, tipo="AIRE", fmt="sin_unidad"):
     return cont.strip(), est.strip()
 
 
-
 # ============================================================================
 # CARGA DE DATOS
 # ============================================================================
@@ -316,7 +315,6 @@ def cargar_datos():
     )
 
 
-
 # ============================================================================
 # G1 — ICA HORARIO POR ESTACIÓN  (lineas individuales, sin promediar)
 # ============================================================================
@@ -379,7 +377,6 @@ def g1_ica_horario(df_ica, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"01_ica_horario_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G2 — MAXIMO ICA DIARIO (sin promediar entre estaciones)
 # ============================================================================
@@ -430,7 +427,6 @@ def g2_ica_max_diario(df_ica, cont, ests, nombre_zona, periodo, tag):
     fig.autofmt_xdate()
     pie_fig(fig)
     guardar(fig, f"02_ica_max_diario_{cont}_{tag}")
-
 
 
 # ============================================================================
@@ -565,7 +561,6 @@ def g4_dias_categoria_estacion(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"04_dias_cat_estacion_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G5 — RESUMEN DIAS POR CONTAMINANTE Y ZONA (barras verticales apiladas)
 # ============================================================================
@@ -629,7 +624,6 @@ def g5_resumen_zona(df_ias_d, conts, ests, nombre_zona, periodo, tag, grupo):
     pie_fig(fig)
     plt.tight_layout()
     guardar(fig, f"05_resumen_zona_{tag}_{grupo.lower()}")
-
 
 
 # ============================================================================
@@ -703,7 +697,6 @@ def g6_calidad_global_mensual(df_ias_d, periodo, anio):
     guardar(fig, "06_calidad_global_mensual")
 
 
-
 # ============================================================================
 # G7 — MOSAICO DIAS FUERA DE NORMA (como Grafica 2 del Reporte Anual)
 # ============================================================================
@@ -717,7 +710,7 @@ def g7_mosaico_fuera_norma(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag
     if not cols:
         return
 
-     # Calcular peor categoria del dia entre estaciones de la zona
+    # Calcular peor categoria del dia entre estaciones de la zona
     df_cats = pd.DataFrame({e: df_ias_d[c] for c, e in cols})
     serie_peor = df_cats.apply(peor_cat, axis=1).rename("categoria")
 
@@ -837,8 +830,6 @@ def g7_mosaico_fuera_norma(df_ias_d, cont, ests, nombre_zona, periodo, anio, tag
     guardar(fig, f"07_mosaico_fuera_norma_{cont}_{tag}")
 
 
-
-
 # ============================================================================
 # G8 — PROMEDIO DEL PERIODO POR ESTACION (barras horizontales)
 # ============================================================================
@@ -897,7 +888,6 @@ def g8_promedios_periodo(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"08_promedios_periodo_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G9 — DISPERSION PM10 vs PM2.5 (diario)
 # ============================================================================
@@ -928,7 +918,6 @@ def g9_pm10_vs_pm25(df_ias_d, ests, nombre_zona, periodo, tag):
     ax.legend()
     pie_fig(fig)
     guardar(fig, f"09_pm10_vs_pm25_{tag}")
-
 
 
 # ============================================================================
@@ -981,7 +970,6 @@ def g10_comparativa_contaminantes(
     guardar(fig, f"10_comparativa_{grupo}_{tag}")
 
 
-
 # ============================================================================
 # G11 — SERIES DIARIAS COMPARATIVAS (lineas temporales)
 # ============================================================================
@@ -1012,7 +1000,6 @@ def g11_series_comparativas(
     fig.autofmt_xdate()
     pie_fig(fig)
     guardar(fig, f"11_series_{grupo}_{tag}")
-
 
 
 # ============================================================================
@@ -1055,7 +1042,6 @@ def g12_correlacion_contaminantes(
     guardar(fig, f"12_correlacion_{grupo}_{tag}")
 
 
-
 # ============================================================================
 # G13 — PERFIL HORARIO (promedio por hora del dia)
 # ============================================================================
@@ -1085,7 +1071,6 @@ def g13_perfil_horario(df_ias_h, cont_list, ests, nombre_zona, periodo, tag, gru
     guardar(fig, f"13_perfil_horario_{grupo}_{tag}")
 
 
-
 # ============================================================================
 # G14 — EVOLUCION DEL ICA (linea temporal)
 # ============================================================================
@@ -1110,7 +1095,6 @@ def g14_evolucion_ica_linea(df_ica, cont, ests, nombre_zona, periodo, tag):
     fig.autofmt_xdate()
     pie_fig(fig)
     guardar(fig, f"14_evolucion_ica_{cont}_{tag}")
-
 
 
 # ============================================================================
@@ -1141,7 +1125,6 @@ def g15_boxplot_contaminante(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     guardar(fig, f"15_boxplot_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G16 — COMPARATIVA DE PROMEDIOS ENTRE ZONAS (barras)
 # ============================================================================
@@ -1170,7 +1153,6 @@ def g16_comparativa_promedios_zona(
     guardar(fig, f"16_comparativa_promedios_zona_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G17 — EVOLUCION MENSUAL (barras)
 # ============================================================================
@@ -1191,7 +1173,6 @@ def g17_evolucion_mensual(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     ax.grid(axis="y", linestyle="--", alpha=0.5)
     pie_fig(fig)
     guardar(fig, f"17_evolucion_mensual_{cont}_{tag}")
-
 
 
 # ============================================================================
@@ -1221,7 +1202,6 @@ def g18_dias_fuera_norma(df_ias_d, conts, ests, nombre_zona, periodo, tag):
     ax.grid(axis="y", linestyle="--", alpha=0.5)
     pie_fig(fig)
     guardar(fig, f"18_dias_fuera_norma_{tag}")
-
 
 
 # ============================================================================
@@ -1254,7 +1234,6 @@ def g19_dias_fuera_norma_estacion(df_ias_d, cont, ests, nombre_zona, periodo, ta
     guardar(fig, f"19_excedencias_estacion_{cont}_{tag}")
 
 
-
 # ============================================================================
 # G21 — PORCENTAJE DE DIAS POR CATEGORIA IAS (torta)
 # ============================================================================
@@ -1275,7 +1254,6 @@ def g21_porcentaje_categorias(df_ias_d, nombre_zona, periodo, tag):
     )
     pie_fig(fig)
     guardar(fig, f"21_porcentaje_categorias_{tag}")
-
 
 
 # ============================================================================
@@ -1303,7 +1281,6 @@ def g22_comparacion_estaciones(df_ias_d, cont, ests, nombre_zona, periodo, tag):
     ax.tick_params(axis="x", rotation=45, labelsize=9)
     pie_fig(fig)
     guardar(fig, f"22_comparacion_estaciones_{cont}_{tag}")
-
 
 
 # ============================================================================
@@ -1339,7 +1316,6 @@ def g23_calidad_dia_semana(df_ias_d, nombre_zona, periodo, tag):
     guardar(fig, f"23_calidad_dia_semana_{tag}")
 
 
-
 # ============================================================================
 # G24 — DISPERSION O3 vs NO2
 # ============================================================================
@@ -1367,7 +1343,6 @@ def g24_dispersion_o3_no2(df_ias_d, ests, nombre_zona, periodo, tag):
     ax.grid(alpha=0.3)
     pie_fig(fig)
     guardar(fig, f"24_dispersion_o3_no2_{tag}")
-
 
 
 # ============================================================================
@@ -1415,7 +1390,6 @@ def g25_calendario_excedencias(df_ias_d, cont, ests, nombre_zona, periodo, anio,
     guardar(fig, f"25_calendario_excedencias_{cont}_{tag}")
 
 
-
 # ============================================================================
 # HELPERS — buscar columnas independiente del formato
 # ============================================================================
@@ -1453,7 +1427,6 @@ def _buscar_cols_cantidad(df, cont, ests):
                     resultado.append((col, e))
                     break
     return resultado
-
 
 
 # ============================================================================

@@ -85,7 +85,7 @@ def preparar_datos_hoja(df: pd.DataFrame):
             errors="coerce",
             dayfirst=True,
         )
-        
+
         # Sumar 1 dia a las filas que originalmente eran "24:00":
         # "01/01/2024 24:00" representa la medianoche de inicio del 02/01/2024.
         dates[mask_24] = dates[mask_24] + pd.Timedelta(days=1)
@@ -121,7 +121,6 @@ def preparar_datos_hoja(df: pd.DataFrame):
         )
         datos_raw = datos_raw[~datos_raw.index.duplicated(keep="first")]
 
-    
     # Reindexar a frecuencia horaria continua.
     # Si faltan horas en los datos originales (cortes de luz, mantenimiento, etc.),
     # se insertan como filas con NaN para que los calculos de ventana movil

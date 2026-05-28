@@ -93,7 +93,7 @@ def procesar_diario(
         clave_orig = f"{contaminante}_{unidad}"
         if clave_orig not in ventanas:
             continue
-        
+
         # Unidad para mostrar en el nombre de columna (ej. "ppm" para O3_ppb)
         etiqueta_unidad = UNIDAD_DISPLAY.get(clave_orig, unidad)
 
@@ -161,7 +161,6 @@ def procesar_diario(
 
         categorias = [clasificar_nom(v, bandas[clave_bandas]) for v in valor_redondeado]
 
-
         # ====================================================================
         # Construir columnas de salida
         # ====================================================================
@@ -174,7 +173,6 @@ def procesar_diario(
     # Eliminar filas completamente vacias (sin ningun contaminante ese dia)
     df_dia = df_dia.dropna(how="all")
 
-    
     # ========================================================================
     # Columna global "Calidad del aire": peor categoria diaria entre todos
     # los contaminantes y estaciones de ese dia.

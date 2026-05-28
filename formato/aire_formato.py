@@ -75,13 +75,11 @@ def aplicar_formato_aire(ws) -> None:
                 wrap_text=True, horizontal="center", vertical="center"
             )
 
-
     # ------------------------------------------------------------------------
     # 3. Encabezado (primera fila) en negrita
     # ------------------------------------------------------------------------
     for cell in ws[1]:
         cell.font = Font(bold=True)
-
 
     # ------------------------------------------------------------------------
     # 4. Colores de fondo para celdas de categoria

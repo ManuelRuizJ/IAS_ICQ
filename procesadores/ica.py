@@ -95,7 +95,6 @@ def nowcast(serie: pd.Series, pollutant: str) -> pd.Series:
     resultado = np.full(n, np.nan)
 
     for i in range(n):
-
         # Se requieren al menos 12 horas de datos para el primer NowCast
         if i < 11:
             continue
@@ -104,7 +103,7 @@ def nowcast(serie: pd.Series, pollutant: str) -> pd.Series:
         ultimas3 = valores[i - 2 : i + 1]
         if np.sum(~np.isnan(ultimas3)) < 2:
             continue
-        
+
         inicio = i - 11
         ventana = valores[inicio : i + 1]
         validos = ventana[~np.isnan(ventana)]
@@ -129,7 +128,6 @@ def nowcast(serie: pd.Series, pollutant: str) -> pd.Series:
             resultado[i] = (suma_num / suma_den) * fa
 
     return pd.Series(resultado, index=serie.index)
-
 
 
 # ============================================================================
@@ -187,7 +185,7 @@ def procesar_ica(
 
     # i = 0 es la columna de fecha/hora, los datos empiezan en i=1
     for i in range(1, num_orig_cols):
-        col_in_data = i - 1             # indice dentro de data_df (sin columna fecha)
+        col_in_data = i - 1  # indice dentro de data_df (sin columna fecha)
         estacion = estaciones[i]
         contaminante = contaminantes[i]
         unidad = unidades[i]
@@ -224,7 +222,7 @@ def procesar_ica(
 
         if clave_bandas not in bandas:
             continue
-        
+
         # Calcular ICA para cada hora
         ica_lista = [
             calcular_ica(x, bandas[clave_bandas]) if not np.isnan(x) else np.nan

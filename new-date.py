@@ -25,7 +25,7 @@ from datetime import datetime
 # CONFIGURACION
 # ----------------------------------------------------------------------------
 archivo_original = "datos/datos_calidad_aire_2025.xlsx"  # Archivo fuente
-archivo_nuevo = "datos/datos_calidad_aire_2026.xlsx"    # Archivo de salida
+archivo_nuevo = "datos/datos_calidad_aire_2026.xlsx"  # Archivo de salida
 nuevo_anio = 2026  # Año al que se cambiaran las fechas
 
 # ----------------------------------------------------------------------------

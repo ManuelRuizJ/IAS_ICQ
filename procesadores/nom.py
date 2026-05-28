@@ -56,7 +56,6 @@ def descartar_cero_por_redondeo(valor, decimales):
     return redondeado
 
 
-
 # ============================================================================
 # Unidades canonicas por clave (para nombres de columna)
 # ============================================================================
@@ -72,7 +71,6 @@ UNIDAD_DISPLAY = {
     "PM10_ug/m3": "ug/m3",
     "PM2.5_ug/m3": "ug/m3",
 }
-
 
 
 # ============================================================================
@@ -199,8 +197,8 @@ def nowcast_12h(serie: pd.Series, pollutant: str) -> pd.Series:
         # i=12 es la hora mas antigua (indice 0 en ventana)
         suma_num = suma_den = 0.0
         for offset in range(12):
-            i = offset + 1                  # i va de 1 (mas reciente) a 12
-            idx_ventana = 11 - offset       # indice dentro de 'ventana'
+            i = offset + 1  # i va de 1 (mas reciente) a 12
+            idx_ventana = 11 - offset  # indice dentro de 'ventana'
             c = ventana[idx_ventana]
             if not np.isnan(c):
                 w_i = W ** (i - 1)
@@ -247,7 +245,6 @@ def peor_categoria(series_categorias: list, orden: dict, umbral: float = 0.75):
 
     inverso = {v: k for k, v in orden.items()}
     return max_num.map(inverso).where(max_num >= 0, None)
-
 
 
 # ============================================================================
@@ -384,7 +381,6 @@ def procesar_aire(
             descartar_cero_por_redondeo(x, decimales) for x in conc_redondeada
         ]
 
-
         # ====================================================================
         # 3. Clasificar en categoria y construir columnas de salida
         # ====================================================================
@@ -408,7 +404,7 @@ def procesar_aire(
             df_hoja["Calidad del aire"] = peor_categoria(
                 [df_hoja[c] for c in cols_cat],
                 orden_cat,
-                umbral=0.0,          # Se evalua incluso si solo hay una categoria
+                umbral=0.0,  # Se evalua incluso si solo hay una categoria
             )
 
     return df_hoja

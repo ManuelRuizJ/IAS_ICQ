@@ -17,7 +17,6 @@ Archivos de salida (carpeta datos/):
   datos_calidad_aire_DIARIO_ICA.xlsx   - ICA diario     (NADF-009-AIRE-2017)
 """
 
-
 import json
 import pandas as pd
 import tkinter as tk
@@ -70,7 +69,6 @@ ORDEN_CAT = config["orden_categorias"]
 ZONAS = config["zonas"]
 
 
-
 # ============================================================================
 # SELECCION DEL ARCHIVO DE ENTRADA
 # Se usa un dialogo grafico de tkinter para que el usuario seleccione
@@ -89,7 +87,6 @@ def seleccionar_archivo():
     return archivo
 
 
-
 # ============================================================================
 # RUTAS
 # ============================================================================
@@ -105,7 +102,6 @@ SALIDA_ICA = "datos/datos_calidad_aire_ICA.xlsx"
 SALIDA_AIRE = "datos/datos_calidad_aire_AIRE_Y_SALUD.xlsx"
 SALIDA_DIARIO = "datos/datos_calidad_aire_DIARIO_IAS.xlsx"
 SALIDA_ICA_DIARIO = "datos/datos_calidad_aire_DIARIO_ICA.xlsx"
-
 
 
 # ============================================================================
@@ -161,11 +157,10 @@ for hoja in xls.sheet_names:
     if not df_dia.empty:
         df_diario_total = pd.concat([df_diario_total, df_dia])
 
-     # ICA diario: maximo ICA del dia por estacion (no se promedian valores ICA)
+    # ICA diario: maximo ICA del dia por estacion (no se promedian valores ICA)
     df_dia_ica = procesar_ica_diario(**args, ventanas=VENTANAS_NADF, bandas=BANDAS_NADF)
     if not df_dia_ica.empty:
         df_diario_ica_total = pd.concat([df_diario_ica_total, df_dia_ica])
-
 
 
 # ============================================================================
@@ -189,8 +184,6 @@ diccionario_ica.update(construir_hojas_zonas(df_ica_g, ZONAS, tipo="ICA"))
 guardar_diccionario_excel(SALIDA_ICA, diccionario_ica, "ICA", "Fecha & Hora")
 print("  ✓ datos_calidad_aire_ICA.xlsx")
 print("    Hojas:", list(diccionario_ica.keys()))
-
-
 
 
 # ============================================================================
@@ -223,8 +216,6 @@ print("  ✓ datos_calidad_aire_AIRE_Y_SALUD.xlsx")
 print("    Hojas:", list(diccionario_aire.keys()))
 
 
-
-
 # ============================================================================
 # EXPORTACION — IAS DIARIO
 # Un registro por dia calendario. La concentracion representativa
@@ -254,7 +245,6 @@ print("  ✓ datos_calidad_aire_DIARIO.xlsx")
 print("    Hojas:", list(diccionario_diario.keys()))
 
 
-
 # ============================================================================
 # EXPORTACION — ICA DIARIO (NADF-009)
 # Un registro por dia. Cada columna contiene el maximo ICA registrado
@@ -278,4 +268,3 @@ diccionario_ica_d.update(construir_hojas_zonas(df_ica_d_general, ZONAS, tipo="IC
 guardar_diccionario_excel(SALIDA_ICA_DIARIO, diccionario_ica_d, "ICA", "Fecha")
 print("  ✓ datos_calidad_aire_DIARIO_ICA.xlsx")
 print("    Hojas:", list(diccionario_ica_d.keys()))
-

@@ -59,7 +59,7 @@ def procesar_ica_diario(
     # Asegurar que el indice sea datetime (por si viene como string)
     if not isinstance(data_df.index, pd.DatetimeIndex):
         data_df.index = pd.to_datetime(data_df.index)
-    
+
     # Lista de dias unicos ordenados
     dias_ordenados = sorted(data_df.index.normalize().unique())
     df_dia = pd.DataFrame(index=dias_ordenados)
@@ -78,7 +78,7 @@ def procesar_ica_diario(
             unidad = unidad.strip()
         if isinstance(estacion, str):
             estacion = estacion.strip()
-        
+
         # Saltar columnas no contaminantes (ej. "Status")
         if not isinstance(contaminante, str) or contaminante == "Status":
             continue
@@ -115,8 +115,8 @@ def procesar_ica_diario(
 
         if clave_bandas not in bandas:
             continue
-        
-         # Calcular ICA para cada dia mediante interpolacion en la banda correspondiente
+
+        # Calcular ICA para cada dia mediante interpolacion en la banda correspondiente
         ica_lista = [
             calcular_ica(x, bandas[clave_bandas]) if not pd.isna(x) else np.nan
             for x in valor_diario

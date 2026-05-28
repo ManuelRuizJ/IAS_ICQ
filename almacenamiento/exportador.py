@@ -46,7 +46,7 @@ def ordenar_columnas_ica(df: pd.DataFrame) -> list:
     for col in df.columns:
         m = _PAT_ICA.match(col)
         if m:
-            pares.add((m.group(1), m.group(2)))             # (contaminante, estacion)
+            pares.add((m.group(1), m.group(2)))  # (contaminante, estacion)
     # Ordenar por estacion (segundo elemento) y luego por contaminante
     pares_ord = sorted(pares, key=lambda x: (x[1], x[0]))
     cols_ord = [f"ICA_{cont}_{est}" for cont, est in pares_ord]
@@ -115,7 +115,7 @@ def extraer_estaciones_ica(df: pd.DataFrame) -> dict:
     for col in df.columns:
         m = _PAT_ICA.match(col)
         if m:
-            estaciones.add(m.group(2))      # grupo 2 es el nombre de estacion
+            estaciones.add(m.group(2))  # grupo 2 es el nombre de estacion
     resultado = {}
     for est in sorted(estaciones):
         cols = [c for c in df.columns if c.endswith(f"_{est}") and c.startswith("ICA_")]
@@ -156,7 +156,7 @@ def extraer_estaciones_aire(
         else:
             m = _PAT_CANT.match(col)
             if m:
-                estaciones.add(m.group(3))      # grupo 3 es la estacion
+                estaciones.add(m.group(3))  # grupo 3 es la estacion
     resultado = {}
     for est in sorted(estaciones):
         cols_cat = [
@@ -180,7 +180,7 @@ def extraer_estaciones_aire(
         for col in cols_cat:
             m = _PAT_AIRE.match(col)
             if m:
-                pares.append((m.group(1), m.group(2)))      # (contaminante, estacion)
+                pares.append((m.group(1), m.group(2)))  # (contaminante, estacion)
         cols_ord = []
         for cont, est2 in sorted(pares, key=lambda x: x[0]):
             col_cat = f"AIRE_{cont}_{est2}"
@@ -230,7 +230,7 @@ def guardar_diccionario_excel(
                 # guardar como columna para mejor legibilidad.
                 df_export = df.reset_index()
                 df_export.rename(columns={"index": nombre_indice}, inplace=True)
-                 # Formatear fecha como YYYY-MM-DD sin hora
+                # Formatear fecha como YYYY-MM-DD sin hora
                 df_export[nombre_indice] = pd.to_datetime(
                     df_export[nombre_indice]
                 ).dt.strftime("%Y-%m-%d")
